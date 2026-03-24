@@ -1,0 +1,80 @@
+[project]
+name = "obsidian_kanban_parser"
+version = "0.0.1"
+description = "TODO"
+readme = "README.md"
+authors = [
+    {name = "Jordi Smit", email = "j0rd1smit@users.noreply.github.com"}
+]
+maintainers = [
+    {name = "Jordi Smit", email = "j0rd1smit@users.noreply.github.com"}
+]
+classifiers = [
+    # TODO
+]
+license = {text = "MIT"}
+dependencies = [
+    "typer",
+    "python-dotenv",
+    "pyyaml>=6.0.3",
+]
+requires-python = ">= 3.14"
+
+[project.optional-dependencies]
+test = [
+    "coverage",  # testing
+    "pytest",  # testing
+    "ruff",  # linting
+    "mypy", # checking types
+    "types-PyYAML",  # type stubs for PyYAML
+]
+
+[project.urls]
+bugs = "https://github.com/j0rd1smit/obsidian_kanban_parser/issues"
+changelog = "https://github.com/j0rd1smit/obsidian_kanban_parser/blob/master/changelog.md"
+homepage = "https://github.com/j0rd1smit/obsidian_kanban_parser"
+
+[project.scripts]
+obsidian_kanban_parser = "obsidian_kanban_parser.cli:app"
+
+[tool.ty]
+# All rules are enabled as "error" by default; no need to specify unless overriding.
+# Example override: relax a rule for the entire project (uncomment if needed).
+# rules.TY015 = "warn"  # For invalid-argument-type, warn instead of error.
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+]
+
+[tool.uv]
+package = true
+
+[tool.mypy]
+python_version = "3.14"
+mypy_path = "src"
+explicit_package_bases = true
+files = ["src/obsidian_kanban_parser", "tests"]
+python_executable = ".venv/bin/python"
+disallow_untyped_defs = true
+exclude = [
+    ".venv",
+    ".git",
+]
+plugins = []
+
+[tool.pydantic-mypy]
+init_typed = true
+
+[[tool.mypy.overrides]]
+module= []
+ignore_missing_imports = true
+

@@ -1,0 +1,31 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.5.4
+    hooks:
+      - id: uv-lock
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.0.1
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: local
+    hooks:
+      - id: linting
+        name: Linting
+        entry: uvx ruff check
+        types: [python]
+        language: system
+      - id: formatting
+        name: Formatting
+        entry: uvx ruff format
+        types: [python]
+        language: system
+      - id: type-checking
+        name: Type Checking
+        entry: uv run mypy
+        types: [python]
+        language: system

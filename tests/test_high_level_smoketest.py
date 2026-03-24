@@ -1,7 +1,6 @@
 import pytest
 
-from obsidian_kanban_parser import parse, write, find_lane_by_name
-
+from obsidian_kanban_parser import find_lane_by_name, parse, write
 
 _EXAMPLE_FILE_CONTENT = """
 ---
@@ -39,8 +38,8 @@ kanban-plugin: board
 ## Back burner
 
 - [ ] back burner 1
-- [ ] back burner 2  
-    - [ ] back burner 2a  
+- [ ] back burner 2
+    - [ ] back burner 2a
     - [ ] back burner 2b
 - [ ] back burner 3
 
@@ -64,10 +63,12 @@ kanban-plugin: board
 %%
 """.strip()
 
+
 def test_parse_and_write_should_not_change_content() -> None:
     board = parse(_EXAMPLE_FILE_CONTENT)
     output = write(board)
     assert output == _EXAMPLE_FILE_CONTENT
+
 
 @pytest.mark.parametrize(
     "lane_name,expected_tasks",
@@ -76,11 +77,11 @@ def test_parse_and_write_should_not_change_content() -> None:
         ("Scheduled", ["Scheduled 1"]),
         ("Completed", ["Completed 1", "Completed 2"]),
         ("Active", ["Active 1"]),
-    ]
+    ],
 )
 def test_parse_find_expected_tasks(
-        lane_name: str,
-        expected_tasks: list[str],
+    lane_name: str,
+    expected_tasks: list[str],
 ) -> None:
     board = parse(_EXAMPLE_FILE_CONTENT)
 

@@ -1,7 +1,9 @@
 import json
+
 import yaml
-from obsidian_kanban_parser.domain import KanbanItem, KanbanBoard, KanbanLane
-from obsidian_kanban_parser.utils.parsing_utils import _indent_newlines, _replace_newlines, _lane_title_with_max_items
+
+from obsidian_kanban_parser.domain import KanbanBoard, KanbanItem, KanbanLane
+from obsidian_kanban_parser.utils.parsing_utils import _indent_newlines, _lane_title_with_max_items, _replace_newlines
 
 
 def _item_to_md(item: KanbanItem, use_tab: bool = False) -> str:

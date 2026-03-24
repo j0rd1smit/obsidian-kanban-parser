@@ -1,8 +1,7 @@
 import json
 import re
-from typing import Optional
 
-from obsidian_kanban_parser.domain import KanbanLane, KanbanBoard, KanbanItem
+from obsidian_kanban_parser.domain import KanbanBoard, KanbanItem, KanbanLane
 from obsidian_kanban_parser.utils.parsing_utils import _dedent_newlines, _replace_brs
 
 _BLOCK_ID_RE = re.compile(r"\s+\^([a-zA-Z0-9\-_]+)$")
@@ -12,7 +11,7 @@ _LANE_WIP_RE = re.compile(r"^(.*?)\s*\((\d+)\)$")
 def _split_list_items(text: str) -> list[str]:
     """Split a markdown list block into raw item strings (with continuation lines)."""
     items: list[str] = []
-    current: Optional[str] = None
+    current: str | None = None
 
     for line in text.split("\n"):
         if re.match(r"^- \[.\]", line):
@@ -49,7 +48,7 @@ def _parse_raw_item(raw: str) -> KanbanItem:
     first_line = content if nl == -1 else content[:nl]
     rest = "" if nl == -1 else content[nl:]
 
-    block_id: Optional[str] = None
+    block_id: str | None = None
     bid_m = _BLOCK_ID_RE.search(first_line)
     if bid_m:
         block_id = bid_m.group(1)
@@ -72,8 +71,8 @@ def parse(text: str) -> KanbanBoard:
     """
 
     # ---- 1. Strip %% kanban:settings %% block --------------------------------
-    settings: Optional[dict] = None
-    settings_raw: Optional[str] = None
+    settings: dict | None = None
+    settings_raw: str | None = None
 
     settings_re = re.compile(
         r"\n\n%% kanban:settings\n```\n(.*?)\n```\n%%",

@@ -1,6 +1,6 @@
 import re
+from collections.abc import Iterator
 from dataclasses import dataclass, field
-from typing import Optional, Iterator
 
 
 @dataclass
@@ -17,7 +17,7 @@ class KanbanItem:
 
     title_raw: str
     check_char: str = " "  # ' '=unchecked, 'x'=checked, or custom char
-    block_id: Optional[str] = None
+    block_id: str | None = None
 
     # ------------------------------------------------------------------
     # Convenience read-only properties
@@ -32,7 +32,7 @@ class KanbanItem:
         """All #tags found in title_raw, e.g. ['#bug', '#frontend']."""
         return re.findall(r"#[\w/\-]+", self.title_raw)
 
-    def date(self, trigger: str = "@") -> Optional[str]:
+    def date(self, trigger: str = "@") -> str | None:
         """Return the date string for the given trigger character.
 
         Handles all three syntaxes the plugin supports:
@@ -49,7 +49,7 @@ class KanbanItem:
                 return m.group(1)
         return None
 
-    def inline_field(self, key: str) -> Optional[str]:
+    def inline_field(self, key: str) -> str | None:
         """Return the value of [key::value] or (key::value) in title_raw."""
         pat = rf"[\[\(]{re.escape(key)}::([^\]\)]+)[\]\)]"
         m = re.search(pat, self.title_raw)
@@ -58,12 +58,14 @@ class KanbanItem:
     def set_inline_field(self, key: str, value: str) -> None:
         """Update an existing [key::value] field in title_raw, or append it."""
         pat = rf"([\[\(]){re.escape(key)}::([^\]\)]+)([\]\)])"
-        replacement = lambda m: f"{m.group(1)}{key}::{value}{m.group(3)}"
+
+        def replacement(m: re.Match) -> str:
+            return f"{m.group(1)}{key}::{value}{m.group(3)}"
+
         new, count = re.subn(pat, replacement, self.title_raw)
         if count:
             self.title_raw = new
         else:
-            bracket = "[" if "[" not in self.title_raw else "["
             self.title_raw = self.title_raw.rstrip() + f" [{key}::{value}]"
 
     def has_tag(self, tag: str) -> bool:
@@ -110,13 +112,13 @@ class KanbanBoard:
     archive: list[KanbanItem] = field(default_factory=list)
 
     # Per-board settings from the %% kanban:settings %% block (may be None).
-    settings: Optional[dict] = None
+    settings: dict | None = None
 
     # Raw strings preserved for round-trip fidelity — do not mutate directly.
     _frontmatter_raw: str = field(default="", repr=False)
-    _settings_raw: Optional[str] = field(default=None, repr=False)
+    _settings_raw: str | None = field(default=None, repr=False)
 
-    def lane(self, title: str) -> Optional[KanbanLane]:
+    def lane(self, title: str) -> KanbanLane | None:
         """Return the first lane with the given title, or None."""
         for ln in self.lanes:
             if ln.title == title:
@@ -126,6 +128,6 @@ class KanbanBoard:
     def __repr__(self) -> str:
         return (
             f"KanbanBoard({len(self.lanes)} lanes, "
-            f"{sum(len(l.items) for l in self.lanes)} items, "
+            f"{sum(len(ln.items) for ln in self.lanes)} items, "
             f"{len(self.archive)} archived)"
         )

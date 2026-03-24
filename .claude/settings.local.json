@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(just typecheck:*)",
+      "Bash(just format:*)",
+      "Bash(just test:*)",
+      "Bash(uvx ruff:*)"
+    ]
+  }
+}

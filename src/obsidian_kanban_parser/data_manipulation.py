@@ -1,7 +1,6 @@
 import re
-from typing import Optional
 
-from obsidian_kanban_parser.domain import KanbanItem, KanbanBoard, KanbanLane
+from obsidian_kanban_parser.domain import KanbanBoard, KanbanItem, KanbanLane
 
 
 def find_items_by_tag(board: KanbanBoard, tag: str) -> list[tuple[KanbanLane, KanbanItem]]:
@@ -39,7 +38,7 @@ def find_items_by_date(
 def find_items_by_inline_field(
     board: KanbanBoard,
     key: str,
-    value: Optional[str] = None,
+    value: str | None = None,
 ) -> list[tuple[KanbanLane, KanbanItem]]:
     """Return [(lane, item), ...] where the item has [key::...] (optionally matching value)."""
     results = []
@@ -112,7 +111,7 @@ def add_item(
     title_raw: str,
     check_char: str = " ",
     position: int = -1,
-) -> Optional[KanbanItem]:
+) -> KanbanItem | None:
     """Create a new item and insert it into a lane.
 
     Returns the new KanbanItem, or None if the lane was not found.
@@ -180,7 +179,7 @@ def get_subtasks(item: KanbanItem) -> list[tuple[bool, str]]:
 def find_lane_by_name(
     board: KanbanBoard,
     name: str,
-) -> Optional[KanbanLane]:
+) -> KanbanLane | None:
     """Return the first lane with the given name, or None if not found."""
     for lane in board.lanes:
         if lane.title == name:

@@ -17,24 +17,6 @@ def find_items_by_tag(board: KanbanBoard, tag: str) -> list[tuple[KanbanLane, Ka
     return results
 
 
-def find_items_by_date(
-    board: KanbanBoard,
-    date_str: str,
-    trigger: str = "@",
-) -> list[tuple[KanbanLane, KanbanItem]]:
-    """Return [(lane, item), ...] for every item whose date matches ``date_str``.
-
-    ``date_str`` is compared verbatim against the parsed date value, e.g.
-    '2026-03-20'.
-    """
-    results = []
-    for lane in board.lanes:
-        for item in lane.items:
-            if item.date(trigger) == date_str:
-                results.append((lane, item))
-    return results
-
-
 def find_items_by_inline_field(
     board: KanbanBoard,
     key: str,

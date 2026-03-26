@@ -32,23 +32,6 @@ class KanbanItem:
         """All #tags found in title_raw, e.g. ['#bug', '#frontend']."""
         return re.findall(r"#[\w/\-]+", self.title_raw)
 
-    def date(self, trigger: str = "@") -> str | None:
-        """Return the date string for the given trigger character.
-
-        Handles all three syntaxes the plugin supports:
-          @{2026-03-20}  |  @[[2026-03-20]]  |  @[2026-03-20](link)
-        """
-        t = re.escape(trigger)
-        for pat in (
-            rf"{t}\{{([^}}]+)\}}",  # @{date}
-            rf"{t}\[\[([^\]]+)\]\]",  # @[[date]]
-            rf"{t}\[([^\]]+)\]\([^)]*\)",  # @[date](link)
-        ):
-            m = re.search(pat, self.title_raw)
-            if m:
-                return m.group(1)
-        return None
-
     def inline_field(self, key: str) -> str | None:
         """Return the value of [key::value] or (key::value) in title_raw."""
         pat = rf"[\[\(]{re.escape(key)}::([^\]\)]+)[\]\)]"

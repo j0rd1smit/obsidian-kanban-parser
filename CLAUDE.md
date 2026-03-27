@@ -22,7 +22,7 @@ This library parses Obsidian Kanban plugin markdown files into Python objects an
 
 **Data flow:** `parse(text)` → `KanbanBoard` → mutate → `write(board)` → text
 
-**Domain layer** (`domain.py`): Three dataclasses — `KanbanBoard` (top-level, holds lanes + archive + frontmatter + settings), `KanbanLane` (column with items + WIP limit), `KanbanItem` (card with `title_raw` as canonical source of truth). Metadata (tags, dates, inline fields) is parsed on-the-fly from `title_raw` via properties.
+**Domain layer** (`domain.py`): Three dataclasses — `KanbanBoard` (top-level, holds lanes + archive + frontmatter + settings), `KanbanLane` (column with items + WIP limit), `KanbanItem` (card with `title_raw` as canonical source of truth). Metadata (tags, dates, inline fields) is parsed on-the-fly from `title_raw` via properties. Each `KanbanItem` exposes an `inline_fields` proxy (an `InlineFields` instance) supporting dict-like `__getitem__`, `__setitem__`, `__delitem__`, and `__contains__` with automatic type coercion (dates, ints, floats, strings).
 
 **Parser** (`parser.py`): Regex-based parser that handles: YAML frontmatter, `%% kanban:settings %%` JSON block, `## Lane` headings with optional WIP limit `(n)`, `- [x]` checkbox items with optional block IDs (`^id`), and `*** / ## Archive` sections. Raw strings are preserved in `_frontmatter_raw` and `_settings_raw` for write-back fidelity.
 

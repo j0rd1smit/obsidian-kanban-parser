@@ -4,6 +4,8 @@ Each test arranges a known markdown input, calls a read/query API,
 and asserts on the returned domain objects (not on raw markdown).
 """
 
+import datetime
+
 from obsidian_kanban_parser import find_items_by_inline_field, find_items_by_tag, find_lane_by_name, get_subtasks, parse
 from tests.helpers import get_lane, make_board, make_item, make_lane
 
@@ -90,7 +92,7 @@ def test_find_items_by_inline_field_key_only() -> None:
     # assert
     assert len(results) == 1
     _, item = results[0]
-    assert item.inline_field("due") == "2024-06-01"
+    assert item.inline_fields["due"] == datetime.date(2024, 6, 1)
 
 
 def test_find_items_by_inline_field_key_and_value() -> None:

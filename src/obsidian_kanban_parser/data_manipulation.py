@@ -26,8 +26,8 @@ def find_items_by_inline_field(
     results = []
     for lane in board.lanes:
         for item in lane.items:
-            v = item.inline_field(key)
-            if v is not None and (value is None or v == value):
+            v = item.inline_fields[key]
+            if v is not None and (value is None or str(v) == value):
                 results.append((lane, item))
     return results
 

@@ -1,6 +1,75 @@
+from __future__ import annotations
+
+import datetime
 import re
 from collections.abc import Iterator
 from dataclasses import dataclass, field
+
+
+class InlineFields:
+    """Dict-like proxy over a KanbanItem's title_raw for [key::value] fields."""
+
+    def __init__(self, item: KanbanItem) -> None:
+        self._item = item
+
+    @staticmethod
+    def _pattern(key: str) -> re.Pattern:
+        return re.compile(rf"[\[\(]{re.escape(key)}::([^\]\)]+)[\]\)]")
+
+    @staticmethod
+    def _pattern_with_delimiters(key: str) -> re.Pattern:
+        return re.compile(rf"([\[\(]){re.escape(key)}::([^\]\)]+)([\]\)])")
+
+    @staticmethod
+    def _coerce(raw: str) -> datetime.date | int | float | str:
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", raw):
+            try:
+                return datetime.date.fromisoformat(raw)
+            except ValueError:
+                pass
+        try:
+            return int(raw)
+        except ValueError:
+            pass
+        try:
+            return float(raw)
+        except ValueError:
+            pass
+        return raw
+
+    @staticmethod
+    def _serialize(value: datetime.date | int | float | str) -> str:
+        if isinstance(value, datetime.date):
+            return value.isoformat()
+        return str(value)
+
+    def __getitem__(self, key: str) -> datetime.date | int | float | str | None:
+        m = self._pattern(key).search(self._item.title_raw)
+        if m is None:
+            return None
+        return self._coerce(m.group(1).strip())
+
+    def __setitem__(self, key: str, value: datetime.date | int | float | str) -> None:
+        serialized = self._serialize(value)
+        pat = self._pattern_with_delimiters(key)
+
+        def replacement(m: re.Match) -> str:
+            return f"{m.group(1)}{key}::{serialized}{m.group(3)}"
+
+        new, count = pat.subn(replacement, self._item.title_raw)
+        if count:
+            self._item.title_raw = new
+        else:
+            self._item.title_raw = self._item.title_raw.rstrip() + f" [{key}::{serialized}]"
+
+    def __delitem__(self, key: str) -> None:
+        pat = re.compile(rf"\s*[\[\(]{re.escape(key)}::[^\]\)]+[\]\)]")
+        self._item.title_raw = pat.sub("", self._item.title_raw).rstrip()
+
+    def __contains__(self, key: object) -> bool:
+        if not isinstance(key, str):
+            return False
+        return self._pattern(key).search(self._item.title_raw) is not None
 
 
 @dataclass
@@ -19,6 +88,9 @@ class KanbanItem:
     check_char: str = " "  # ' '=unchecked, 'x'=checked, or custom char
     block_id: str | None = None
 
+    def __post_init__(self) -> None:
+        self.inline_fields = InlineFields(self)
+
     # ------------------------------------------------------------------
     # Convenience read-only properties
     # ------------------------------------------------------------------
@@ -31,25 +103,6 @@ class KanbanItem:
     def tags(self) -> list[str]:
         """All #tags found in title_raw, e.g. ['#bug', '#frontend']."""
         return re.findall(r"#[\w/\-]+", self.title_raw)
-
-    def inline_field(self, key: str) -> str | None:
-        """Return the value of [key::value] or (key::value) in title_raw."""
-        pat = rf"[\[\(]{re.escape(key)}::([^\]\)]+)[\]\)]"
-        m = re.search(pat, self.title_raw)
-        return m.group(1).strip() if m else None
-
-    def set_inline_field(self, key: str, value: str) -> None:
-        """Update an existing [key::value] field in title_raw, or append it."""
-        pat = rf"([\[\(]){re.escape(key)}::([^\]\)]+)([\]\)])"
-
-        def replacement(m: re.Match) -> str:
-            return f"{m.group(1)}{key}::{value}{m.group(3)}"
-
-        new, count = re.subn(pat, replacement, self.title_raw)
-        if count:
-            self.title_raw = new
-        else:
-            self.title_raw = self.title_raw.rstrip() + f" [{key}::{value}]"
 
     def has_tag(self, tag: str) -> bool:
         """Case-sensitive check. Tag may be passed with or without leading #."""

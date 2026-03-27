@@ -45,3 +45,7 @@ This library parses Obsidian Kanban plugin markdown files into Python objects an
     - You verified that the code base is in the correct state by run the `just linting`, `just typecheck`, and `just test` commands.
     - You updated out-of-date information in this `CLAUDE.md` file.
     - The `README.md` file is up to date and your changes are reflected in the documentation and examples.
+- When implementing tests, keep the following in mind:
+  - Test suite should focus on high-level functionality read -> manipulate -> write such that the implementation details can easily be changed without breaking tests, as long as the high-level functionality is preserved. So the arrange part should focus on creating input boards in markdown format, while the assert part should focus on comparing the output markdown with expected markdown.
+  - Test suite should have various helper function to make the arrange-act-assert pattern easy to follow and repeat across test cases. E.g. builder function, common assertions, etc.
+  - Test cases should follow the arrange-act-assert pattern, and be structured in a way that is easy to read and understand.

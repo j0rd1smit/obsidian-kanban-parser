@@ -2,6 +2,12 @@ _default:
   just --list
 
 
+ruff_check:
+    uvx ruff check . --fix
+
+ruff_format:
+    uvx ruff format .
+
 # Install the project dependencies
 install:
     uv sync --all-extras

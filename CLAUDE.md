@@ -5,9 +5,11 @@
 Just commands to run in the terminal for development and testing:
 ```bash
 just install
-just linting    # Format the code and check for linting issues
-just typecheck  # type checks the codebase
-just test       # run the test suite
+just linting      # Format the code and check for linting issues
+just typecheck    # type checks the codebase
+just test         # run the test suite
+just ruff_check   # run ruff check with --fix to automatically fix issues
+just ruff_format  # run ruff format to format the code
 ```
 Prefer these over direct command (like `uv run pytest`) since they set the right environment variables and ensure consistency, unless absolutely necessary to run a command directly.
 

@@ -1,22 +1,16 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Commands
 
 Just commands to run in the terminal for development and testing:
 ```bash
-just install      # uv sync --all-extras
-just test         # run pytest
-just format       # run pre-commit on all files (ruff lint + format + mypy + yaml checks)
-just typecheck    # run mypy only
+just install
+just linting    # Format the code and check for linting issues
+just typecheck  # type checks the codebase
+just test       # run the test suite
 ```
 Prefer these over direct command (like `uv run pytest`) since they set the right environment variables and ensure consistency, unless absolutely necessary to run a command directly.
 
-Single test:
-```bash
-uv run pytest tests/test_high_level_smoketest.py::test_name
-```
 
 
 
@@ -32,7 +26,7 @@ This library parses Obsidian Kanban plugin markdown files into Python objects an
 
 **Writer** (`writer.py`): Mirrors the Obsidian plugin's own serialization (`itemToMd`, `laneToMd`, etc.). Uses preserved raw strings when available; falls back to regenerating from parsed data.
 
-**Data manipulation** (`data_manipulation.py`): Higher-level helpers for querying and mutating boards — `find_items_by_tag`, `find_items_by_date`, `find_items_by_inline_field`, `move_item`, `archive_item`, `add_item`, `add_subtask`, etc.
+**Data manipulation** (`data_manipulation.py`): Higher-level helpers for querying and mutating boards — `find_items_by_tag`, `find_items_by_inline_field`, `find_lane_by_name`, `move_item`, `archive_item`, `unarchive_item`, `add_item`, `remove_item`, `add_subtask`, `remove_subtask`, `get_subtasks`.
 
 **Public API** (`__init__.py`): Exports `parse`, `write`, and the main query/manipulation functions.
 
@@ -44,3 +38,10 @@ This library parses Obsidian Kanban plugin markdown files into Python objects an
 - The parser preserves raw frontmatter and settings strings to avoid reformatting on write-back.
 - All utility functions in `parsing_utils.py` are intentionally private (underscore prefix) — they mirror JS internals and are not part of the public API.
 - Requires Python 3.14+.
+
+## Way of working
+- When adding a new feature do this in a test driven way: write test -> write feature -> ensure test pass -> refactor -> repeat as necessary.
+- Before finishing any coding task, make sure that:
+    - You verified that the code base is in the correct state by run the `just linting`, `just typecheck`, and `just test` commands.
+    - You updated out-of-date information in this `CLAUDE.md` file.
+    - The `README.md` file is up to date and your changes are reflected in the documentation and examples.

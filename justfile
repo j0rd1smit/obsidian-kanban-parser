@@ -1,5 +1,3 @@
-alias fmt := format
-
 _default:
   just --list
 
@@ -9,7 +7,7 @@ install:
     uv sync --all-extras
 
 # Format the code and check for linting issues
-format:
+linting:
     pre-commit run --all-files
 
 typecheck:

@@ -10,7 +10,7 @@ that is intentionally kept as a regression anchor).
 
 import pytest
 
-from tests.helpers import assert_round_trips, make_board, make_item, make_lane
+from tests.helpers import assert_markdown_is_equal, make_board, make_item, make_lane, parse_and_write
 
 # ---------------------------------------------------------------------------
 # Parametrised cases — simple, isolated feature scenarios
@@ -112,7 +112,11 @@ _ROUND_TRIP_CASES: list[tuple[str, str]] = [
 
 @pytest.mark.parametrize("description,md", _ROUND_TRIP_CASES, ids=[c[0] for c in _ROUND_TRIP_CASES])
 def test_round_trip(description: str, md: str) -> None:
-    assert_round_trips(md)
+    # act
+    output_md = parse_and_write(md)
+
+    # assert
+    assert_markdown_is_equal(output_md, md)
 
 
 # ---------------------------------------------------------------------------
@@ -207,4 +211,8 @@ def test_full_board_builder_matches_legacy_fixture() -> None:
 
 def test_full_board_round_trips() -> None:
     """The full complex board must survive a parse → write cycle unchanged."""
-    assert_round_trips(_FULL_BOARD)
+    # act
+    output_md = parse_and_write(_FULL_BOARD)
+
+    # assert
+    assert_markdown_is_equal(output_md, _FULL_BOARD)

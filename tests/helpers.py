@@ -1,15 +1,21 @@
 """Test helpers: markdown builders and assertion utilities.
 
 Builders mirror the writer's serialisation logic exactly, so that
-``assert_round_trips(make_board(...))`` always holds and tests stay
-decoupled from internal implementation details.
+``assert_markdown_is_equal(parse_and_write(make_board(...)), make_board(...))``
+always holds and tests stay decoupled from internal implementation details.
+
+Assertion helpers are intentionally small and accept already-resolved objects
+(boards, lanes) rather than raw markdown strings.  Callers are responsible for
+the arrange/act steps (parse, find_lane_by_name, etc.) so that each helper
+stays composable and the test body makes every step explicit.
 """
 
 from __future__ import annotations
 
 import json
 
-from obsidian_kanban_parser import find_lane_by_name, parse, write
+from obsidian_kanban_parser import parse, write
+from obsidian_kanban_parser.domain import KanbanBoard, KanbanLane
 
 # ---------------------------------------------------------------------------
 # Default frontmatter — identical to what the Obsidian Kanban plugin creates
@@ -112,51 +118,41 @@ def make_board(
 
 
 def parse_and_write(md: str) -> str:
-    """Convenience: parse markdown and immediately write it back."""
+    """Act helper: parse markdown and immediately write it back."""
     return write(parse(md))
 
 
-def assert_round_trips(md: str) -> None:
-    """Assert that parsing then writing the markdown produces identical content."""
-    result = parse_and_write(md)
-    assert result == md, f"Round-trip produced different output.\n\n--- expected ---\n{md!r}\n\n--- got ---\n{result!r}"
+def assert_markdown_is_equal(one: str, other: str) -> None:
+    """Assert that two markdown strings are identical."""
+    assert one == other, f"different output.\n\n--- expected ---\n{other!r}\n\n--- got ---\n{one!r}"
 
 
-def assert_item_in_lane(result_md: str, lane_title: str, item_fragment: str) -> None:
-    """Assert that *result_md* contains an item matching *item_fragment* in *lane_title*."""
-    board = parse(result_md)
-    lane = find_lane_by_name(board, lane_title)
-    assert lane is not None, f"Lane '{lane_title}' not found in board"
+def assert_item_in_lane(lane: KanbanLane, item_fragment: str) -> None:
+    """Assert that *lane* contains an item matching *item_fragment*."""
     titles = [item.title_raw for item in lane]
     assert any(item_fragment in t for t in titles), (
-        f"No item containing {item_fragment!r} found in lane '{lane_title}'.\nItems present: {titles}"
+        f"No item containing {item_fragment!r} found in lane.\nItems present: {titles}"
     )
 
 
-def assert_item_not_in_lane(result_md: str, lane_title: str, item_fragment: str) -> None:
-    """Assert that no item in *lane_title* matches *item_fragment*."""
-    board = parse(result_md)
-    lane = find_lane_by_name(board, lane_title)
-    if lane is None:
-        return  # lane absent → item definitely not there
+def assert_item_not_in_lane(lane: KanbanLane, item_fragment: str) -> None:
+    """Assert that no item in *lane* matches *item_fragment*."""
     titles = [item.title_raw for item in lane]
     assert not any(item_fragment in t for t in titles), (
-        f"Item containing {item_fragment!r} was unexpectedly found in lane '{lane_title}'.\nItems present: {titles}"
+        f"Item containing {item_fragment!r} was unexpectedly found in lane.\nItems present: {titles}"
     )
 
 
-def assert_item_in_archive(result_md: str, item_fragment: str) -> None:
-    """Assert that an archived item matching *item_fragment* exists in *result_md*."""
-    board = parse(result_md)
+def assert_item_in_archive(board: KanbanBoard, item_fragment: str) -> None:
+    """Assert that an archived item matching *item_fragment* exists in *board*."""
     titles = [item.title_raw for item in board.archive]
     assert any(item_fragment in t for t in titles), (
         f"No archived item containing {item_fragment!r} found.\nArchived items: {titles}"
     )
 
 
-def assert_item_not_in_archive(result_md: str, item_fragment: str) -> None:
-    """Assert that no archived item in *result_md* matches *item_fragment*."""
-    board = parse(result_md)
+def assert_item_not_in_archive(board: KanbanBoard, item_fragment: str) -> None:
+    """Assert that no archived item in *board* matches *item_fragment*."""
     titles = [item.title_raw for item in board.archive]
     assert not any(item_fragment in t for t in titles), (
         f"Archived item containing {item_fragment!r} was unexpectedly found.\nArchived items: {titles}"

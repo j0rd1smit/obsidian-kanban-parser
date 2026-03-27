@@ -5,9 +5,7 @@ and asserts on the returned domain objects (not on raw markdown).
 """
 
 from obsidian_kanban_parser import find_items_by_inline_field, find_items_by_tag, find_lane_by_name, get_subtasks, parse
-
-from tests.helpers import make_board, make_item, make_lane
-
+from tests.helpers import get_lane, make_board, make_item, make_lane
 
 # ---------------------------------------------------------------------------
 # find_items_by_tag
@@ -168,9 +166,7 @@ def test_iterate_items_in_lane() -> None:
     board = parse(md)
 
     # act
-    lane = find_lane_by_name(board, "Todo")
-    assert lane is not None
-    titles = [item.title_raw for item in lane]
+    titles = [item.title_raw for item in get_lane(board, "Todo")]
 
     # assert
     assert titles == ["A", "B", "C"]
@@ -187,10 +183,7 @@ def test_get_subtasks_returns_checked_and_unchecked() -> None:
     board = parse(md)
 
     # act
-    lane = find_lane_by_name(board, "Backlog")
-    assert lane is not None
-    item = lane.items[0]
-    subtasks = get_subtasks(item)
+    subtasks = get_subtasks(get_lane(board, "Backlog").items[0])
 
     # assert
     assert subtasks == [(False, "Step 1"), (True, "Step 2")]

@@ -13,16 +13,25 @@ stays composable and the test body makes every step explicit.
 from __future__ import annotations
 
 import json
+from typing import Any
 
-from obsidian_kanban_parser import parse, write
+from obsidian_kanban_parser import find_lane_by_name, parse, write
 from obsidian_kanban_parser.domain import KanbanBoard, KanbanLane
 
-# ---------------------------------------------------------------------------
-# Default frontmatter — identical to what the Obsidian Kanban plugin creates
-# and what the parser stores as _frontmatter_raw.  The trailing \n (not \n\n)
-# is intentional: write() appends its own \n before the first lane.
-# ---------------------------------------------------------------------------
-_DEFAULT_FRONTMATTER = "---\n\nkanban-plugin: board\n\n---\n"
+
+def make_frontmatter(extra: dict[str, Any] | None = None) -> str:
+    """Return a raw frontmatter string with ``kanban-plugin: board`` plus any extra fields.
+
+    Use this to avoid writing raw ``---\\n\\n...\\n\\n---\\n`` strings in tests.
+
+    Example::
+
+        make_frontmatter({"custom-field": "my-value"})
+        # "---\\n\\nkanban-plugin: board\\ncustom-field: my-value\\n\\n---\\n"
+    """
+    fields = {"kanban-plugin": "board", **(extra or {})}
+    lines = "\n".join(f"{k}: {v}" for k, v in fields.items())
+    return f"---\n\n{lines}\n\n---\n"
 
 
 # ---------------------------------------------------------------------------
@@ -94,7 +103,7 @@ def make_board(
         archive: Item markdown strings (from :func:`make_item`) for the
             archive section.
     """
-    fm = _DEFAULT_FRONTMATTER if frontmatter is None else frontmatter
+    fm = make_frontmatter() if frontmatter is None else frontmatter
     lanes_md = "".join(lane_mds)
 
     archive_md = ""
@@ -157,3 +166,14 @@ def assert_item_not_in_archive(board: KanbanBoard, item_fragment: str) -> None:
     assert not any(item_fragment in t for t in titles), (
         f"Archived item containing {item_fragment!r} was unexpectedly found.\nArchived items: {titles}"
     )
+
+
+def get_lane(board: KanbanBoard, title: str) -> KanbanLane:
+    """Return the named lane; fail the test immediately if it doesn't exist.
+
+    Use this in arrange/act steps to skip the repetitive
+    ``assert lane is not None`` boilerplate.
+    """
+    lane = find_lane_by_name(board, title)
+    assert lane is not None, f"Lane {title!r} not found in board"
+    return lane

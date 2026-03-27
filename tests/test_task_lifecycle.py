@@ -3,10 +3,8 @@
 Arrange markdown → parse → mutate → write → assert output markdown.
 """
 
-from obsidian_kanban_parser import add_item, find_lane_by_name, move_item, parse, remove_item, write
-
-from tests.helpers import assert_markdown_is_equal, make_board, make_item, make_lane
-
+from obsidian_kanban_parser import add_item, move_item, parse, remove_item, write
+from tests.helpers import assert_markdown_is_equal, get_lane, make_board, make_item, make_lane
 
 # ---------------------------------------------------------------------------
 # add_item
@@ -64,9 +62,7 @@ def test_remove_item_from_lane() -> None:
     # arrange
     md = make_board(make_lane("Todo", make_item("Keep"), make_item("Remove me")))
     board = parse(md)
-    lane = find_lane_by_name(board, "Todo")
-    assert lane is not None
-    item = lane.items[1]  # "Remove me"
+    item = get_lane(board, "Todo").items[1]  # "Remove me"
 
     # act
     result = remove_item(board, item, "Todo")
@@ -82,9 +78,7 @@ def test_remove_item_not_in_specified_lane_returns_false() -> None:
     # arrange — item is in "Todo" but we try to remove from "Done"
     md = make_board(make_lane("Todo", make_item("Task")), make_lane("Done"))
     board = parse(md)
-    todo_lane = find_lane_by_name(board, "Todo")
-    assert todo_lane is not None
-    item = todo_lane.items[0]
+    item = get_lane(board, "Todo").items[0]
 
     # act
     result = remove_item(board, item, "Done")
@@ -102,9 +96,7 @@ def test_move_item_to_another_lane() -> None:
     # arrange
     md = make_board(make_lane("Todo", make_item("Task")), make_lane("Done"))
     board = parse(md)
-    todo_lane = find_lane_by_name(board, "Todo")
-    assert todo_lane is not None
-    item = todo_lane.items[0]
+    item = get_lane(board, "Todo").items[0]
 
     # act
     move_item(board, item, "Todo", "Done")
@@ -122,9 +114,7 @@ def test_move_item_to_position_zero_in_destination() -> None:
         make_lane("Done", make_item("Existing")),
     )
     board = parse(md)
-    todo_lane = find_lane_by_name(board, "Todo")
-    assert todo_lane is not None
-    item = todo_lane.items[0]
+    item = get_lane(board, "Todo").items[0]
 
     # act
     move_item(board, item, "Todo", "Done", position=0)

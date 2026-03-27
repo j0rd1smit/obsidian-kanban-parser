@@ -3,10 +3,8 @@
 Arrange markdown → parse → mutate subtasks → write → assert output markdown.
 """
 
-from obsidian_kanban_parser import add_subtask, find_lane_by_name, get_subtasks, parse, remove_subtask, write
-
-from tests.helpers import assert_markdown_is_equal, make_board, make_item, make_lane, parse_and_write
-
+from obsidian_kanban_parser import add_subtask, get_subtasks, parse, remove_subtask, write
+from tests.helpers import assert_markdown_is_equal, get_lane, make_board, make_item, make_lane, parse_and_write
 
 # ---------------------------------------------------------------------------
 # get_subtasks
@@ -19,10 +17,7 @@ def test_get_subtasks_returns_checked_and_unchecked() -> None:
     board = parse(md)
 
     # act
-    lane = find_lane_by_name(board, "Backlog")
-    assert lane is not None
-    item = lane.items[0]
-    subtasks = get_subtasks(item)
+    subtasks = get_subtasks(get_lane(board, "Backlog").items[0])
 
     # assert
     assert subtasks == [(False, "Step 1"), (True, "Step 2")]
@@ -37,9 +32,7 @@ def test_add_subtask_unchecked() -> None:
     # arrange
     md = make_board(make_lane("Todo", make_item("Epic")))
     board = parse(md)
-    lane = find_lane_by_name(board, "Todo")
-    assert lane is not None
-    item = lane.items[0]
+    item = get_lane(board, "Todo").items[0]
 
     # act
     add_subtask(item, "Sub-task A")
@@ -54,9 +47,7 @@ def test_add_subtask_checked() -> None:
     # arrange
     md = make_board(make_lane("Todo", make_item("Epic")))
     board = parse(md)
-    lane = find_lane_by_name(board, "Todo")
-    assert lane is not None
-    item = lane.items[0]
+    item = get_lane(board, "Todo").items[0]
 
     # act
     add_subtask(item, "Done step", checked=True)
@@ -76,9 +67,7 @@ def test_remove_subtask() -> None:
     # arrange
     md = make_board(make_lane("Todo", make_item("Epic\n- [ ] Step 1\n- [ ] Step 2")))
     board = parse(md)
-    lane = find_lane_by_name(board, "Todo")
-    assert lane is not None
-    item = lane.items[0]
+    item = get_lane(board, "Todo").items[0]
 
     # act
     result = remove_subtask(item, "Step 1")
@@ -94,9 +83,7 @@ def test_remove_nonexistent_subtask_returns_false() -> None:
     # arrange
     md = make_board(make_lane("Todo", make_item("Epic\n- [ ] Step 1")))
     board = parse(md)
-    lane = find_lane_by_name(board, "Todo")
-    assert lane is not None
-    item = lane.items[0]
+    item = get_lane(board, "Todo").items[0]
 
     # act
     result = remove_subtask(item, "Nonexistent")

@@ -3,10 +3,8 @@
 Arrange markdown → parse → read/mutate inline fields → write → assert.
 """
 
-from obsidian_kanban_parser import find_items_by_inline_field, find_lane_by_name, parse, write
-
-from tests.helpers import assert_markdown_is_equal, make_board, make_item, make_lane
-
+from obsidian_kanban_parser import find_items_by_inline_field, parse, write
+from tests.helpers import assert_markdown_is_equal, get_lane, make_board, make_item, make_lane
 
 # ---------------------------------------------------------------------------
 # Reading inline fields
@@ -19,9 +17,7 @@ def test_read_inline_field_value() -> None:
     board = parse(md)
 
     # act
-    lane = find_lane_by_name(board, "Todo")
-    assert lane is not None
-    item = lane.items[0]
+    item = get_lane(board, "Todo").items[0]
 
     # assert
     assert item.inline_field("due") == "2024-06-01"
@@ -33,9 +29,7 @@ def test_read_missing_inline_field_returns_none() -> None:
     board = parse(md)
 
     # act
-    lane = find_lane_by_name(board, "Todo")
-    assert lane is not None
-    item = lane.items[0]
+    item = get_lane(board, "Todo").items[0]
 
     # assert
     assert item.inline_field("due") is None
@@ -50,9 +44,7 @@ def test_add_inline_field() -> None:
     # arrange
     md = make_board(make_lane("Todo", make_item("Task")))
     board = parse(md)
-    lane = find_lane_by_name(board, "Todo")
-    assert lane is not None
-    item = lane.items[0]
+    item = get_lane(board, "Todo").items[0]
 
     # act
     item.set_inline_field("priority", "high")
@@ -67,9 +59,7 @@ def test_add_two_inline_fields() -> None:
     # arrange
     md = make_board(make_lane("Todo", make_item("Task")))
     board = parse(md)
-    lane = find_lane_by_name(board, "Todo")
-    assert lane is not None
-    item = lane.items[0]
+    item = get_lane(board, "Todo").items[0]
 
     # act
     item.set_inline_field("priority", "high")
@@ -90,9 +80,7 @@ def test_update_existing_inline_field() -> None:
     # arrange
     md = make_board(make_lane("Todo", make_item("Task [priority::low]")))
     board = parse(md)
-    lane = find_lane_by_name(board, "Todo")
-    assert lane is not None
-    item = lane.items[0]
+    item = get_lane(board, "Todo").items[0]
 
     # act
     item.set_inline_field("priority", "high")
@@ -112,9 +100,7 @@ def test_find_by_inline_field_after_set() -> None:
     # arrange
     md = make_board(make_lane("Todo", make_item("Task A"), make_item("Task B")))
     board = parse(md)
-    lane = find_lane_by_name(board, "Todo")
-    assert lane is not None
-    item_a = lane.items[0]
+    item_a = get_lane(board, "Todo").items[0]
 
     # act — set field on item A only
     item_a.set_inline_field("owner", "alice")

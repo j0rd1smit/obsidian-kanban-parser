@@ -124,9 +124,7 @@ def test_round_trip(description: str, md: str) -> None:
 # ---------------------------------------------------------------------------
 
 _FULL_BOARD = make_board(
-    make_lane(
-        "Completed", make_item("Completed 1", checked=True), make_item("Completed 2", checked=True), mark_complete=True
-    ),
+    make_lane("Completed", make_item("Completed 1", checked=True), make_item("Completed 2", checked=True), mark_complete=True),
     make_lane("Active", make_item("Active 1"), wip_limit=3),
     make_lane("Scheduled", make_item("Scheduled 1"), wip_limit=5),
     make_lane("Waiting for", make_item("Waiting for 1")),
@@ -139,7 +137,13 @@ _FULL_BOARD = make_board(
     ),
     make_lane("Clarify", make_item("Some Clarify task")),
     archive=[make_item("Task 1", checked=True), make_item("Task 2", checked=True)],
-    settings={"kanban-plugin": "board"},
+    settings={
+        "kanban-plugin": "board",
+        "new-note-folder": "01 Projects/Xebia/Tasks",
+        "show-add-list": True,
+        "list-collapse": [None, False, None],
+        "show-checkboxes": True,
+    },
 )
 
 # The canonical string from the original smoketest — kept verbatim so that any
@@ -198,10 +202,13 @@ kanban-plugin: board
 - [x] Task 2
 
 %% kanban:settings
+
 ```
-{"kanban-plugin":"board"}
+{"kanban-plugin":"board","new-note-folder":"01 Projects/Xebia/Tasks","show-add-list":true,"list-collapse":[null,false,null],"show-checkboxes":true}
 ```
-%%""".strip()
+
+%%
+""".lstrip()
 
 
 def test_full_board_builder_matches_legacy_fixture() -> None:

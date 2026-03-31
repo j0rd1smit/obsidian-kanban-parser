@@ -43,7 +43,7 @@ obsidian_kanban_parser = "obsidian_kanban_parser.cli:app"
 # rules.TY015 = "warn"  # For invalid-argument-type, warn instead of error.
 
 [tool.ruff]
-line-length = 120
+line-length = 220
 
 [tool.ruff.lint]
 select = [

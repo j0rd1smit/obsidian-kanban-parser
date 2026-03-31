@@ -115,7 +115,7 @@ def make_board(
     settings_md = ""
     if settings is not None:
         json_str = json.dumps(settings, separators=(",", ":"))
-        settings_md = f"\n\n%% kanban:settings\n```\n{json_str}\n```\n%%"
+        settings_md = f"\n\n%% kanban:settings\n\n```\n{json_str}\n```\n\n%%\n"
 
     # write() produces: frontmatter_raw + "\n" + lanes + archive + settings
     return fm + "\n" + lanes_md + archive_md + settings_md
@@ -139,33 +139,25 @@ def assert_markdown_is_equal(one: str, other: str) -> None:
 def assert_item_in_lane(lane: KanbanLane, item_fragment: str) -> None:
     """Assert that *lane* contains an item matching *item_fragment*."""
     titles = [item.content for item in lane]
-    assert any(item_fragment in t for t in titles), (
-        f"No item containing {item_fragment!r} found in lane.\nItems present: {titles}"
-    )
+    assert any(item_fragment in t for t in titles), f"No item containing {item_fragment!r} found in lane.\nItems present: {titles}"
 
 
 def assert_item_not_in_lane(lane: KanbanLane, item_fragment: str) -> None:
     """Assert that no item in *lane* matches *item_fragment*."""
     titles = [item.content for item in lane]
-    assert not any(item_fragment in t for t in titles), (
-        f"Item containing {item_fragment!r} was unexpectedly found in lane.\nItems present: {titles}"
-    )
+    assert not any(item_fragment in t for t in titles), f"Item containing {item_fragment!r} was unexpectedly found in lane.\nItems present: {titles}"
 
 
 def assert_item_in_archive(board: KanbanBoard, item_fragment: str) -> None:
     """Assert that an archived item matching *item_fragment* exists in *board*."""
     titles = [item.content for item in board.archive]
-    assert any(item_fragment in t for t in titles), (
-        f"No archived item containing {item_fragment!r} found.\nArchived items: {titles}"
-    )
+    assert any(item_fragment in t for t in titles), f"No archived item containing {item_fragment!r} found.\nArchived items: {titles}"
 
 
 def assert_item_not_in_archive(board: KanbanBoard, item_fragment: str) -> None:
     """Assert that no archived item in *board* matches *item_fragment*."""
     titles = [item.content for item in board.archive]
-    assert not any(item_fragment in t for t in titles), (
-        f"Archived item containing {item_fragment!r} was unexpectedly found.\nArchived items: {titles}"
-    )
+    assert not any(item_fragment in t for t in titles), f"Archived item containing {item_fragment!r} was unexpectedly found.\nArchived items: {titles}"
 
 
 def get_lane(board: KanbanBoard, title: str) -> KanbanLane:

@@ -50,10 +50,8 @@ def _settings_to_md(board: KanbanBoard) -> str:
     if board.settings is None:
         return ""
     # Use the preserved raw JSON string for byte-for-byte fidelity.
-    json_str = (
-        board._settings_raw if board._settings_raw is not None else json.dumps(board.settings, separators=(",", ":"))
-    )
-    return "\n".join(["", "", "%% kanban:settings", "```", json_str, "```", "%%"])
+    json_str = board._settings_raw if board._settings_raw is not None else json.dumps(board.settings, separators=(",", ":"))
+    return "\n".join(["", "", "%% kanban:settings", "", "```", json_str, "```", "", "%%", ""])
 
 
 def _frontmatter_to_md(board: KanbanBoard) -> str:

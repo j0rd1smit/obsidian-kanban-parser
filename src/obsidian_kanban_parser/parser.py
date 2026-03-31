@@ -75,7 +75,7 @@ def parse(text: str) -> KanbanBoard:
     settings_raw: str | None = None
 
     settings_re = re.compile(
-        r"\n\n%% kanban:settings\n```\n(.*?)\n```\n%%",
+        r"\n\n%% kanban:settings\n\n```\n(.*?)\n```\n\n%%\n?",
         re.DOTALL,
     )
     sm = settings_re.search(text)

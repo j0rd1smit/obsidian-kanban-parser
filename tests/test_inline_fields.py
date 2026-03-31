@@ -231,13 +231,13 @@ def test_delete_missing_field_is_noop() -> None:
     md = make_board(make_lane("Todo", make_item("Task")))
     board = parse(md)
     item = get_lane(board, "Todo").items[0]
-    original_title_raw = item.title_raw
+    original_title_raw = item.content
 
     # act
     del item.inline_fields["nonexistent"]
 
     # assert
-    assert item.title_raw == original_title_raw
+    assert item.content == original_title_raw
 
 
 # ---------------------------------------------------------------------------
@@ -263,27 +263,6 @@ def test_contains_false() -> None:
     # act / assert
     item = get_lane(board, "Todo").items[0]
     assert "due" not in item.inline_fields
-
-
-# ---------------------------------------------------------------------------
-# Group 5: Integration with search
-# ---------------------------------------------------------------------------
-
-
-def test_find_by_inline_field_after_set() -> None:
-    # arrange
-    md = make_board(make_lane("Todo", make_item("Task A"), make_item("Task B")))
-    board = parse(md)
-    item_a = get_lane(board, "Todo").items[0]
-
-    # act
-    item_a.inline_fields["owner"] = "alice"
-    results = board.find_items_by_inline_field("owner", "alice")
-
-    # assert
-    assert len(results) == 1
-    _, found = results[0]
-    assert found is item_a
 
 
 # ---------------------------------------------------------------------------

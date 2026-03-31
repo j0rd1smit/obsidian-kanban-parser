@@ -1,9 +1,12 @@
-"""Task lifecycle tests: add, remove, move items, and checked setter.
+"""Task lifecycle tests: add, remove, move items, checked setter, and sort.
 
 Arrange markdown → parse → mutate → write → assert output markdown.
 """
 
-from obsidian_kanban_parser import move_item, parse, write
+import datetime
+from typing import Any
+
+from obsidian_kanban_parser import KanbanItem, move_item, parse, write
 from tests.helpers import assert_markdown_is_equal, get_lane, make_board, make_item, make_lane
 
 # ---------------------------------------------------------------------------
@@ -45,7 +48,7 @@ def test_add_checked_item() -> None:
     board = parse(md)
 
     # act
-    get_lane(board, "Done").add_item("Finished task", check_char="x")
+    get_lane(board, "Done").add_item("Finished task", checked=True)
     result_md = write(board)
 
     # assert
@@ -160,4 +163,93 @@ def test_set_checked_false() -> None:
 
     # assert
     expected_md = make_board(make_lane("Done", make_item("Task")))
+    assert_markdown_is_equal(result_md, expected_md)
+
+
+# ---------------------------------------------------------------------------
+# lane.sort
+# ---------------------------------------------------------------------------
+
+
+def test_sort_default_alphabetical() -> None:
+    # arrange
+    md = make_board(make_lane("Todo", make_item("Zebra"), make_item("Apple"), make_item("Mango")))
+    board = parse(md)
+
+    # act
+    get_lane(board, "Todo").sort()
+    result_md = write(board)
+
+    # assert
+    expected_md = make_board(make_lane("Todo", make_item("Apple"), make_item("Mango"), make_item("Zebra")))
+    assert_markdown_is_equal(result_md, expected_md)
+
+
+def test_sort_with_custom_key() -> None:
+    # arrange — items with [due::YYYY-MM-DD] inline fields
+    md = make_board(
+        make_lane(
+            "Todo",
+            make_item("Task C [due::2024-03-01]"),
+            make_item("Task A [due::2024-01-01]"),
+            make_item("Task B [due::2024-02-01]"),
+        )
+    )
+    board = parse(md)
+
+    # act — sort by due date ascending
+    get_lane(board, "Todo").sort(key=lambda item: item.inline_fields["due"])
+    result_md = write(board)
+
+    # assert
+    expected_md = make_board(
+        make_lane(
+            "Todo",
+            make_item("Task A [due::2024-01-01]"),
+            make_item("Task B [due::2024-02-01]"),
+            make_item("Task C [due::2024-03-01]"),
+        )
+    )
+    assert_markdown_is_equal(result_md, expected_md)
+
+
+def test_sort_multi_key_tags_then_inline_field() -> None:
+    # arrange — mix of priority tags, then due date within each group
+    PRIORITY_ORDER = {"#priority/critical": 0, "#priority/essential": 1, "#priority/enhancing": 2}
+
+    md = make_board(
+        make_lane(
+            "Todo",
+            make_item("E2 #priority/essential [due::2024-02-01]"),
+            make_item("C1 #priority/critical [due::2024-01-01]"),
+            make_item("En1 #priority/enhancing [due::2024-01-15]"),
+            make_item("E1 #priority/essential [due::2024-01-01]"),
+            make_item("C2 #priority/critical [due::2024-03-01]"),
+        )
+    )
+    board = parse(md)
+
+    def sort_key(item: KanbanItem) -> tuple[int, Any]:
+        priority = next(
+            (PRIORITY_ORDER[tag] for tag in item.tags if tag in PRIORITY_ORDER),
+            len(PRIORITY_ORDER),
+        )
+        due = item.inline_fields["due"] or datetime.date.max
+        return (priority, due)
+
+    # act
+    get_lane(board, "Todo").sort(key=sort_key)
+    result_md = write(board)
+
+    # assert — critical first (by due), then essential (by due), then enhancing
+    expected_md = make_board(
+        make_lane(
+            "Todo",
+            make_item("C1 #priority/critical [due::2024-01-01]"),
+            make_item("C2 #priority/critical [due::2024-03-01]"),
+            make_item("E1 #priority/essential [due::2024-01-01]"),
+            make_item("E2 #priority/essential [due::2024-02-01]"),
+            make_item("En1 #priority/enhancing [due::2024-01-15]"),
+        )
+    )
     assert_markdown_is_equal(result_md, expected_md)

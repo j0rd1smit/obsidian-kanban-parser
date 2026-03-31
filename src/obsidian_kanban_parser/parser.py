@@ -37,7 +37,7 @@ def _parse_raw_item(raw: str) -> KanbanItem:
     # raw starts with '- [x] '
     m = re.match(r"^- \[(.)\] (.*)", raw, re.DOTALL)
     if not m:
-        return KanbanItem(title_raw=raw)
+        return KanbanItem(content=raw)
 
     check_char = m.group(1)
     content = m.group(2)
@@ -54,9 +54,9 @@ def _parse_raw_item(raw: str) -> KanbanItem:
         block_id = bid_m.group(1)
         first_line = first_line[: bid_m.start()]
 
-    title_raw = first_line + rest
+    content = first_line + rest
 
-    return KanbanItem(title_raw=title_raw, check_char=check_char, block_id=block_id)
+    return KanbanItem(content=content, check_char=check_char, block_id=block_id)
 
 
 def _parse_items_block(block: str) -> list[KanbanItem]:

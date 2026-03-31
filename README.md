@@ -42,7 +42,7 @@ The API should allow users to easily make script that preform actions such as:
 ### Public exports
 
 ```python
-from obsidian_kanban_parser import parse, write, move_item, KanbanBoard, KanbanLane, KanbanItem
+from obsidian_kanban_parser import parse, write, move_item, KanbanBoard, KanbanLane, KanbanItem, SubTask
 ```
 
 ### Parsing and writing
@@ -66,7 +66,7 @@ todo_lane = board.lane("Todo")  # None if not found
 
 # Iterate over items in a lane
 for item in todo_lane:
-    print(item.title_raw)
+    print(item.content)
 
 # Index into a lane
 first_item = todo_lane[0]
@@ -111,7 +111,7 @@ item.checked = True   # writable
 ### Subtasks
 
 ```python
-item.subtasks                        # [(bool, str), ...]
+item.subtasks                        # list[SubTask]  (SubTask.checked, SubTask.text)
 item.add_subtask("Step 1")           # unchecked
 item.add_subtask("Done", checked=True)
 item.remove_subtask("Step 1")        # returns True if found
@@ -122,8 +122,28 @@ item.remove_subtask("Step 1")        # returns True if found
 ```python
 new_item = lane.add_item("My new task")
 new_item = lane.add_item("My new task", position=0)   # prepend
-new_item = lane.add_item("Done task", check_char="x")
+new_item = lane.add_item("Done task", checked=True)
 lane.remove_item(item)   # returns True on success
+
+# Factory for manual construction
+item = KanbanItem.create("My task", checked=False)
+```
+
+### Sorting items in a lane
+
+```python
+# Default: alphabetical by content
+lane.sort()
+
+# Custom key: sort by due date
+lane.sort(key=lambda item: item.inline_fields["due"])
+
+# Multi-key: priority tag group, then due date within each group
+PRIORITY = {"#priority/critical": 0, "#priority/essential": 1, "#priority/enhancing": 2}
+lane.sort(key=lambda item: (
+    next((PRIORITY[t] for t in item.tags if t in PRIORITY), len(PRIORITY)),
+    item.inline_fields["due"] or datetime.date.max,
+))
 ```
 
 ### Moving items
@@ -140,15 +160,4 @@ move_item(item, from_lane=board["Todo"], to_lane=board["Done"], position=0)
 ```python
 board.archive_item(item, from_lane=board["Todo"])       # returns True on success
 board.unarchive_item(item, to_lane=board["Backlog"])    # returns True on success
-```
-
-### Searching
-
-```python
-# Returns [(lane, item), ...]
-board.find_items_by_tag("#urgent")
-board.find_items_by_tag("urgent")          # # prefix optional
-
-board.find_items_by_inline_field("due")              # any value
-board.find_items_by_inline_field("priority", "high") # specific value
 ```

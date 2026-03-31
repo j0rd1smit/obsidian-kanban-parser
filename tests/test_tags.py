@@ -182,22 +182,3 @@ def test_discard_is_alias_for_remove() -> None:
     # assert
     expected_md = make_board(make_lane("Todo", make_item("Task")))
     assert_markdown_is_equal(result_md, expected_md)
-
-
-# ---------------------------------------------------------------------------
-# Case sensitivity
-# ---------------------------------------------------------------------------
-
-
-def test_tag_search_is_case_sensitive() -> None:
-    # arrange — item has #Bug (capital B)
-    md = make_board(make_lane("Todo", make_item("Task #Bug")))
-    board = parse(md)
-
-    # act
-    results_exact = board.find_items_by_tag("#Bug")
-    results_lower = board.find_items_by_tag("#bug")
-
-    # assert — only the exact case matches
-    assert len(results_exact) == 1
-    assert len(results_lower) == 0

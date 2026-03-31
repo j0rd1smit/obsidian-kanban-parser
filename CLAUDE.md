@@ -22,10 +22,10 @@ This library parses Obsidian Kanban plugin markdown files into Python objects an
 
 **Data flow:** `parse(text)` → `KanbanBoard` → mutate → `write(board)` → text
 
-**Domain layer** (`domain.py`): Three dataclasses — `KanbanBoard` (top-level, holds lanes + archive + frontmatter + settings), `KanbanLane` (column with items + WIP limit), `KanbanItem` (card with `title_raw` as canonical source of truth). Metadata (dates, inline fields) is parsed on-the-fly from `title_raw` via properties. Each class exposes Pythonic dunder methods:
-- `KanbanItem`: `checked` (readable/writable bool property), `tags` (`Tags` proxy — set-like with `add`, `remove`, `discard`, `__contains__`, `__len__`, `__iter__`), `inline_fields` (`InlineFields` proxy — dict-like with `__getitem__`, `__setitem__`, `__delitem__`, `__contains__`), `subtasks` (read-only property), `add_subtask`, `remove_subtask`.
-- `KanbanLane`: `__iter__`, `__contains__`, `__len__`, `__getitem__`, `add_item`, `remove_item`.
-- `KanbanBoard`: `__iter__`, `__len__`, `__getitem__` (by lane title str or int index), `lane(title)` (returns `None` if missing), `find_items_by_tag`, `find_items_by_inline_field`, `archive_item`, `unarchive_item`.
+**Domain layer** (`domain.py`): Four dataclasses — `KanbanBoard` (top-level, holds lanes + archive + frontmatter + settings), `KanbanLane` (column with items + WIP limit), `KanbanItem` (card with `content` as canonical source of truth), `SubTask` (subtask with `checked` and `text`). Metadata (dates, inline fields) is parsed on-the-fly from `content` via properties. Each class exposes Pythonic dunder methods:
+- `KanbanItem`: `content` (str field, canonical source of truth), `checked` (readable/writable bool property), `tags` (`Tags` proxy — set-like with `add`, `remove`, `__contains__`, `__len__`, `__iter__`), `inline_fields` (`InlineFields` proxy — dict-like with `__getitem__`, `__setitem__`, `__delitem__`, `__contains__`), `subtasks` (returns `list[SubTask]`), `add_subtask`, `remove_subtask`, `create(content, checked, block_id)` (static factory).
+- `KanbanLane`: `__iter__`, `__contains__`, `__len__`, `__getitem__`, `add_item(content, checked, position)`, `remove_item`, `sort(key=None)`.
+- `KanbanBoard`: `__iter__`, `__len__`, `__getitem__` (by lane title str or int index), `lane(title)` (returns `None` if missing), `archive_item`, `unarchive_item`.
 
 **Parser** (`parser.py`): Regex-based parser that handles: YAML frontmatter, `%% kanban:settings %%` JSON block, `## Lane` headings with optional WIP limit `(n)`, `- [x]` checkbox items with optional block IDs (`^id`), and `*** / ## Archive` sections. Raw strings are preserved in `_frontmatter_raw` and `_settings_raw` for write-back fidelity.
 
@@ -33,13 +33,13 @@ This library parses Obsidian Kanban plugin markdown files into Python objects an
 
 **Data manipulation** (`data_manipulation.py`): Contains only `move_item(item, from_lane, to_lane, position=-1)` — operates directly on lane objects, no board or string lookups needed.
 
-**Public API** (`__init__.py`): Exports `parse`, `write`, `move_item`, `KanbanBoard`, `KanbanLane`, `KanbanItem`.
+**Public API** (`__init__.py`): Exports `parse`, `write`, `move_item`, `KanbanBoard`, `KanbanLane`, `KanbanItem`, `SubTask`.
 
 **Parsing utils** (`utils/parsing_utils.py`): Low-level string transforms mirroring the Obsidian plugin's JS functions — `_indent_newlines` / `_dedent_newlines` (4-space or tab continuation), `_replace_brs` / `_replace_newlines` (lane title `<br>` handling).
 
 ## Key design decisions
 
-- `title_raw` is the single source of truth for a `KanbanItem`'s content. Never construct display text separately.
+- `content` is the single source of truth for a `KanbanItem`'s text. Never construct display text separately.
 - The parser preserves raw frontmatter and settings strings to avoid reformatting on write-back.
 - All utility functions in `parsing_utils.py` are intentionally private (underscore prefix) — they mirror JS internals and are not part of the public API.
 - Requires Python 3.14+.

@@ -8,7 +8,7 @@ from obsidian_kanban_parser.utils.parsing_utils import _indent_newlines, _lane_t
 
 def _item_to_md(item: KanbanItem, use_tab: bool = False) -> str:
     """Mirror of itemToMd() in list.ts."""
-    body = _indent_newlines(item.title_raw, use_tab)
+    body = _indent_newlines(item.content, use_tab)
     if item.block_id:
         # Block ID appended to first line only.
         nl = body.find("\n")

@@ -42,21 +42,21 @@ def make_frontmatter(extra: dict[str, Any] | None = None) -> str:
 
 
 def make_item(
-    title_raw: str,
+    content: str,
     *,
     checked: bool = False,
     block_id: str | None = None,
 ) -> str:
     """Return a single item line as the writer would produce it.
 
-    *title_raw* uses ``\\n`` for embedded content lines (e.g. subtasks) in
-    their un-indented, canonical form — exactly what ``KanbanItem.title_raw``
+    *content* uses ``\\n`` for embedded content lines (e.g. subtasks) in
+    their un-indented, canonical form — exactly what ``KanbanItem.content``
     stores.  Continuation lines are indented with 4 spaces in the output,
     mirroring ``_item_to_md`` / ``_indent_newlines`` in writer.py.
     """
     check_char = "x" if checked else " "
     # Mirror _indent_newlines: strip then re-indent continuation lines.
-    body = title_raw.strip().replace("\n", "\n    ")
+    body = content.strip().replace("\n", "\n    ")
     if block_id:
         nl = body.find("\n")
         if nl == -1:
@@ -138,7 +138,7 @@ def assert_markdown_is_equal(one: str, other: str) -> None:
 
 def assert_item_in_lane(lane: KanbanLane, item_fragment: str) -> None:
     """Assert that *lane* contains an item matching *item_fragment*."""
-    titles = [item.title_raw for item in lane]
+    titles = [item.content for item in lane]
     assert any(item_fragment in t for t in titles), (
         f"No item containing {item_fragment!r} found in lane.\nItems present: {titles}"
     )
@@ -146,7 +146,7 @@ def assert_item_in_lane(lane: KanbanLane, item_fragment: str) -> None:
 
 def assert_item_not_in_lane(lane: KanbanLane, item_fragment: str) -> None:
     """Assert that no item in *lane* matches *item_fragment*."""
-    titles = [item.title_raw for item in lane]
+    titles = [item.content for item in lane]
     assert not any(item_fragment in t for t in titles), (
         f"Item containing {item_fragment!r} was unexpectedly found in lane.\nItems present: {titles}"
     )
@@ -154,7 +154,7 @@ def assert_item_not_in_lane(lane: KanbanLane, item_fragment: str) -> None:
 
 def assert_item_in_archive(board: KanbanBoard, item_fragment: str) -> None:
     """Assert that an archived item matching *item_fragment* exists in *board*."""
-    titles = [item.title_raw for item in board.archive]
+    titles = [item.content for item in board.archive]
     assert any(item_fragment in t for t in titles), (
         f"No archived item containing {item_fragment!r} found.\nArchived items: {titles}"
     )
@@ -162,7 +162,7 @@ def assert_item_in_archive(board: KanbanBoard, item_fragment: str) -> None:
 
 def assert_item_not_in_archive(board: KanbanBoard, item_fragment: str) -> None:
     """Assert that no archived item in *board* matches *item_fragment*."""
-    titles = [item.title_raw for item in board.archive]
+    titles = [item.content for item in board.archive]
     assert not any(item_fragment in t for t in titles), (
         f"Archived item containing {item_fragment!r} was unexpectedly found.\nArchived items: {titles}"
     )

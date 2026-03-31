@@ -3,7 +3,7 @@
 Arrange markdown → parse → mutate subtasks → write → assert output markdown.
 """
 
-from obsidian_kanban_parser import parse, write
+from obsidian_kanban_parser import SubTask, parse, write
 from tests.helpers import assert_markdown_is_equal, get_lane, make_board, make_item, make_lane, parse_and_write
 
 # ---------------------------------------------------------------------------
@@ -20,7 +20,7 @@ def test_get_subtasks_returns_checked_and_unchecked() -> None:
     subtasks = get_lane(board, "Backlog").items[0].subtasks
 
     # assert
-    assert subtasks == [(False, "Step 1"), (True, "Step 2")]
+    assert subtasks == [SubTask(checked=False, text="Step 1"), SubTask(checked=True, text="Step 2")]
 
 
 # ---------------------------------------------------------------------------

@@ -22,15 +22,18 @@ This library parses Obsidian Kanban plugin markdown files into Python objects an
 
 **Data flow:** `parse(text)` → `KanbanBoard` → mutate → `write(board)` → text
 
-**Domain layer** (`domain.py`): Three dataclasses — `KanbanBoard` (top-level, holds lanes + archive + frontmatter + settings), `KanbanLane` (column with items + WIP limit), `KanbanItem` (card with `title_raw` as canonical source of truth). Metadata (tags, dates, inline fields) is parsed on-the-fly from `title_raw` via properties. Each `KanbanItem` exposes an `inline_fields` proxy (an `InlineFields` instance) supporting dict-like `__getitem__`, `__setitem__`, `__delitem__`, and `__contains__` with automatic type coercion (dates, ints, floats, strings).
+**Domain layer** (`domain.py`): Three dataclasses — `KanbanBoard` (top-level, holds lanes + archive + frontmatter + settings), `KanbanLane` (column with items + WIP limit), `KanbanItem` (card with `title_raw` as canonical source of truth). Metadata (dates, inline fields) is parsed on-the-fly from `title_raw` via properties. Each class exposes Pythonic dunder methods:
+- `KanbanItem`: `checked` (readable/writable bool property), `tags` (`Tags` proxy — set-like with `add`, `remove`, `discard`, `__contains__`, `__len__`, `__iter__`), `inline_fields` (`InlineFields` proxy — dict-like with `__getitem__`, `__setitem__`, `__delitem__`, `__contains__`), `subtasks` (read-only property), `add_subtask`, `remove_subtask`.
+- `KanbanLane`: `__iter__`, `__contains__`, `__len__`, `__getitem__`, `add_item`, `remove_item`.
+- `KanbanBoard`: `__iter__`, `__len__`, `__getitem__` (by lane title str or int index), `lane(title)` (returns `None` if missing), `find_items_by_tag`, `find_items_by_inline_field`, `archive_item`, `unarchive_item`.
 
 **Parser** (`parser.py`): Regex-based parser that handles: YAML frontmatter, `%% kanban:settings %%` JSON block, `## Lane` headings with optional WIP limit `(n)`, `- [x]` checkbox items with optional block IDs (`^id`), and `*** / ## Archive` sections. Raw strings are preserved in `_frontmatter_raw` and `_settings_raw` for write-back fidelity.
 
 **Writer** (`writer.py`): Mirrors the Obsidian plugin's own serialization (`itemToMd`, `laneToMd`, etc.). Uses preserved raw strings when available; falls back to regenerating from parsed data.
 
-**Data manipulation** (`data_manipulation.py`): Higher-level helpers for querying and mutating boards — `find_items_by_tag`, `find_items_by_inline_field`, `find_lane_by_name`, `move_item`, `archive_item`, `unarchive_item`, `add_item`, `remove_item`, `add_subtask`, `remove_subtask`, `get_subtasks`.
+**Data manipulation** (`data_manipulation.py`): Contains only `move_item(item, from_lane, to_lane, position=-1)` — operates directly on lane objects, no board or string lookups needed.
 
-**Public API** (`__init__.py`): Exports `parse`, `write`, and the main query/manipulation functions.
+**Public API** (`__init__.py`): Exports `parse`, `write`, `move_item`, `KanbanBoard`, `KanbanLane`, `KanbanItem`.
 
 **Parsing utils** (`utils/parsing_utils.py`): Low-level string transforms mirroring the Obsidian plugin's JS functions — `_indent_newlines` / `_dedent_newlines` (4-space or tab continuation), `_replace_brs` / `_replace_newlines` (lane title `<br>` handling).
 
@@ -51,5 +54,5 @@ This library parses Obsidian Kanban plugin markdown files into Python objects an
   - Test suite should focus on high-level functionality read -> manipulate -> write such that the implementation details can easily be changed without breaking tests, as long as the high-level functionality is preserved. So the arrange part should focus on creating input boards in markdown format, while the assert part should focus on comparing the output markdown with expected markdown.
   - Test suite should have various helper function to make the arrange-act-assert pattern easy to follow and repeat across test cases. E.g. builder function, common assertions, etc.
   - Test cases should follow the arrange-act-assert pattern, and be structured in a way that is easy to read and understand.
-  - Keep arrange, act, and assert strictly separated — helpers must not cross these boundaries. Assertion helpers accept already-resolved objects (`KanbanBoard`, `KanbanLane`) rather than raw markdown; callers are responsible for parsing and resolving before asserting. This keeps helpers small, composable, and reusable. For example: parse the board, call `find_lane_by_name`, then pass the lane to `assert_item_in_lane` — don't bundle those steps inside the assertion helper.
+  - Keep arrange, act, and assert strictly separated — helpers must not cross these boundaries. Assertion helpers accept already-resolved objects (`KanbanBoard`, `KanbanLane`) rather than raw markdown; callers are responsible for parsing and resolving before asserting. This keeps helpers small, composable, and reusable. For example: parse the board, call `board.lane(title)`, then pass the lane to `assert_item_in_lane` — don't bundle those steps inside the assertion helper.
 - You can store memories and other things you want to remember from feedback and previous conversations in the `memories` directory. It contains an index file at `memory/MEMORY.md` that has an overview of the different memories and there paths.

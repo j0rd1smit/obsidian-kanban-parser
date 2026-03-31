@@ -6,7 +6,7 @@ always holds and tests stay decoupled from internal implementation details.
 
 Assertion helpers are intentionally small and accept already-resolved objects
 (boards, lanes) rather than raw markdown strings.  Callers are responsible for
-the arrange/act steps (parse, find_lane_by_name, etc.) so that each helper
+the arrange/act steps (parse, board.lane(), etc.) so that each helper
 stays composable and the test body makes every step explicit.
 """
 
@@ -15,7 +15,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from obsidian_kanban_parser import find_lane_by_name, parse, write
+from obsidian_kanban_parser import parse, write
 from obsidian_kanban_parser.domain import KanbanBoard, KanbanLane
 
 
@@ -174,6 +174,6 @@ def get_lane(board: KanbanBoard, title: str) -> KanbanLane:
     Use this in arrange/act steps to skip the repetitive
     ``assert lane is not None`` boilerplate.
     """
-    lane = find_lane_by_name(board, title)
+    lane = board.lane(title)
     assert lane is not None, f"Lane {title!r} not found in board"
     return lane

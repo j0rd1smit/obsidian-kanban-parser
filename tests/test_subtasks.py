@@ -3,11 +3,11 @@
 Arrange markdown → parse → mutate subtasks → write → assert output markdown.
 """
 
-from obsidian_kanban_parser import add_subtask, get_subtasks, parse, remove_subtask, write
+from obsidian_kanban_parser import parse, write
 from tests.helpers import assert_markdown_is_equal, get_lane, make_board, make_item, make_lane, parse_and_write
 
 # ---------------------------------------------------------------------------
-# get_subtasks
+# subtasks property
 # ---------------------------------------------------------------------------
 
 
@@ -17,7 +17,7 @@ def test_get_subtasks_returns_checked_and_unchecked() -> None:
     board = parse(md)
 
     # act
-    subtasks = get_subtasks(get_lane(board, "Backlog").items[0])
+    subtasks = get_lane(board, "Backlog").items[0].subtasks
 
     # assert
     assert subtasks == [(False, "Step 1"), (True, "Step 2")]
@@ -35,7 +35,7 @@ def test_add_subtask_unchecked() -> None:
     item = get_lane(board, "Todo").items[0]
 
     # act
-    add_subtask(item, "Sub-task A")
+    item.add_subtask("Sub-task A")
     result_md = write(board)
 
     # assert
@@ -50,7 +50,7 @@ def test_add_subtask_checked() -> None:
     item = get_lane(board, "Todo").items[0]
 
     # act
-    add_subtask(item, "Done step", checked=True)
+    item.add_subtask("Done step", checked=True)
     result_md = write(board)
 
     # assert
@@ -70,7 +70,7 @@ def test_remove_subtask() -> None:
     item = get_lane(board, "Todo").items[0]
 
     # act
-    result = remove_subtask(item, "Step 1")
+    result = item.remove_subtask("Step 1")
     result_md = write(board)
 
     # assert
@@ -86,7 +86,7 @@ def test_remove_nonexistent_subtask_returns_false() -> None:
     item = get_lane(board, "Todo").items[0]
 
     # act
-    result = remove_subtask(item, "Nonexistent")
+    result = item.remove_subtask("Nonexistent")
 
     # assert
     assert result is False

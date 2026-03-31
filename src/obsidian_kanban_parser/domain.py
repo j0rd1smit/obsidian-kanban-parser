@@ -72,6 +72,41 @@ class InlineFields:
         return self._pattern(key).search(self._item.title_raw) is not None
 
 
+class Tags:
+    """Set-like proxy over a KanbanItem's title_raw for #tag operations."""
+
+    def __init__(self, item: KanbanItem) -> None:
+        self._item = item
+
+    def _normalize(self, tag: str) -> str:
+        return tag if tag.startswith("#") else f"#{tag}"
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(re.findall(r"#[\w/\-]+", self._item.title_raw))
+
+    def __contains__(self, tag: object) -> bool:
+        if not isinstance(tag, str):
+            return False
+        return self._normalize(tag) in re.findall(r"#[\w/\-]+", self._item.title_raw)
+
+    def __len__(self) -> int:
+        return len(re.findall(r"#[\w/\-]+", self._item.title_raw))
+
+    def __repr__(self) -> str:
+        return f"Tags({list(self)!r})"
+
+    def add(self, tag: str) -> None:
+        """Idempotent — does nothing if the tag is already present."""
+        tag = self._normalize(tag)
+        if tag not in self:
+            self._item.title_raw = self._item.title_raw.rstrip() + f" {tag}"
+
+    def remove(self, tag: str) -> None:
+        """Safe — does nothing if the tag is absent."""
+        tag = self._normalize(tag)
+        self._item.title_raw = re.sub(r"\s*" + re.escape(tag) + r"\b", "", self._item.title_raw).strip()
+
+
 @dataclass
 class KanbanItem:
     """A single card/task on the board.
@@ -90,33 +125,44 @@ class KanbanItem:
 
     def __post_init__(self) -> None:
         self.inline_fields = InlineFields(self)
+        self.tags = Tags(self)
 
     # ------------------------------------------------------------------
-    # Convenience read-only properties
+    # Convenience properties
     # ------------------------------------------------------------------
 
     @property
     def checked(self) -> bool:
         return self.check_char.lower() == "x"
 
+    @checked.setter
+    def checked(self, value: bool) -> None:
+        self.check_char = "x" if value else " "
+
     @property
-    def tags(self) -> list[str]:
-        """All #tags found in title_raw, e.g. ['#bug', '#frontend']."""
-        return re.findall(r"#[\w/\-]+", self.title_raw)
+    def subtasks(self) -> list[tuple[bool, str]]:
+        """Return a list of (checked, text) for each sub-task line in title_raw."""
+        results = []
+        for m in re.finditer(r"\n- \[(.)\] (.+)", self.title_raw):
+            results.append((m.group(1).lower() == "x", m.group(2)))
+        return results
 
-    def has_tag(self, tag: str) -> bool:
-        """Case-sensitive check. Tag may be passed with or without leading #."""
-        tag = tag if tag.startswith("#") else f"#{tag}"
-        return tag in self.tags
+    def add_subtask(self, subtask_text: str, checked: bool = False) -> None:
+        """Append a checklist sub-task line to title_raw."""
+        char = "x" if checked else " "
+        subtask_line = f"\n- [{char}] {subtask_text}"
+        self.title_raw = self.title_raw.rstrip() + subtask_line
 
-    def add_tag(self, tag: str) -> None:
-        tag = tag if tag.startswith("#") else f"#{tag}"
-        if not self.has_tag(tag):
-            self.title_raw = self.title_raw.rstrip() + f" {tag}"
-
-    def remove_tag(self, tag: str) -> None:
-        tag = tag if tag.startswith("#") else f"#{tag}"
-        self.title_raw = re.sub(r"\s*" + re.escape(tag) + r"\b", "", self.title_raw).strip()
+    def remove_subtask(self, subtask_text: str) -> bool:
+        """Remove a sub-task line by matching its text. Returns True if removed."""
+        pattern = re.compile(
+            r"\n- \[.\] " + re.escape(subtask_text) + r"[ \t]*",
+        )
+        new, count = pattern.subn("", self.title_raw)
+        if count:
+            self.title_raw = new.rstrip()
+            return True
+        return False
 
     def __repr__(self) -> str:
         status = "x" if self.checked else " "
@@ -135,8 +181,33 @@ class KanbanLane:
     def __iter__(self) -> Iterator[KanbanItem]:
         return iter(list(self.items))
 
+    def __contains__(self, item: object) -> bool:
+        return item in self.items
+
+    def __len__(self) -> int:
+        return len(self.items)
+
+    def __getitem__(self, index: int) -> KanbanItem:
+        return self.items[index]
+
     def __repr__(self) -> str:
         return f"KanbanLane({self.title!r}, {len(self.items)} items)"
+
+    def add_item(self, title_raw: str, check_char: str = " ", position: int = -1) -> KanbanItem:
+        """Create and insert a new item into this lane. Returns the new KanbanItem."""
+        item = KanbanItem(title_raw=title_raw, check_char=check_char)
+        if position < 0 or position >= len(self.items):
+            self.items.append(item)
+        else:
+            self.items.insert(position, item)
+        return item
+
+    def remove_item(self, item: KanbanItem) -> bool:
+        """Remove an item from this lane. Returns True on success."""
+        if item not in self.items:
+            return False
+        self.items.remove(item)
+        return True
 
 
 @dataclass
@@ -160,6 +231,63 @@ class KanbanBoard:
             if ln.title == title:
                 return ln
         return None
+
+    def __iter__(self) -> Iterator[KanbanLane]:
+        return iter(list(self.lanes))
+
+    def __len__(self) -> int:
+        return len(self.lanes)
+
+    def __getitem__(self, key: str | int) -> KanbanLane:
+        if isinstance(key, int):
+            return self.lanes[key]
+        result = self.lane(key)
+        if result is None:
+            raise KeyError(key)
+        return result
+
+    def find_items_by_tag(self, tag: str) -> list[tuple[KanbanLane, KanbanItem]]:
+        """Return [(lane, item), ...] for every item that has the given tag.
+
+        ``tag`` may be passed with or without a leading #.
+        """
+        tag = tag if tag.startswith("#") else f"#{tag}"
+        results = []
+        for ln in self.lanes:
+            for item in ln.items:
+                if tag in item.tags:
+                    results.append((ln, item))
+        return results
+
+    def find_items_by_inline_field(
+        self,
+        key: str,
+        value: str | None = None,
+    ) -> list[tuple[KanbanLane, KanbanItem]]:
+        """Return [(lane, item), ...] where the item has [key::...] (optionally matching value)."""
+        results = []
+        for ln in self.lanes:
+            for item in ln.items:
+                v = item.inline_fields[key]
+                if v is not None and (value is None or str(v) == value):
+                    results.append((ln, item))
+        return results
+
+    def archive_item(self, item: KanbanItem, from_lane: KanbanLane) -> bool:
+        """Remove item from a lane and append it to the archive. Returns True on success."""
+        if item not in from_lane.items:
+            return False
+        from_lane.items.remove(item)
+        self.archive.append(item)
+        return True
+
+    def unarchive_item(self, item: KanbanItem, to_lane: KanbanLane) -> bool:
+        """Move an archived item back into a lane. Returns True on success."""
+        if item not in self.archive:
+            return False
+        self.archive.remove(item)
+        to_lane.items.append(item)
+        return True
 
     def __repr__(self) -> str:
         return (

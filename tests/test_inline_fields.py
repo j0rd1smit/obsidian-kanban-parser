@@ -5,7 +5,7 @@ Arrange markdown → parse → read/mutate inline fields → write → assert.
 
 import datetime
 
-from obsidian_kanban_parser import find_items_by_inline_field, parse, write
+from obsidian_kanban_parser import parse, write
 from tests.helpers import assert_markdown_is_equal, get_lane, make_board, make_item, make_lane
 
 # ---------------------------------------------------------------------------
@@ -278,7 +278,7 @@ def test_find_by_inline_field_after_set() -> None:
 
     # act
     item_a.inline_fields["owner"] = "alice"
-    results = find_items_by_inline_field(board, "owner", "alice")
+    results = board.find_items_by_inline_field("owner", "alice")
 
     # assert
     assert len(results) == 1

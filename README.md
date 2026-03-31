@@ -28,7 +28,6 @@ The API should allow users to easily make script that preform actions such as:
 - Read and write Kanban board(s).
 - Find tasks with specific tags or inline fields.
 - Add, update, and remove tags and inline fields from tasks.
-- Add, update, and remove tags and tags from tasks.
 - Find lanes with specific names.
 - Update line properties such as WIP limits, title, etc.
 - Move tasks between lanes and boards.
@@ -37,3 +36,119 @@ The API should allow users to easily make script that preform actions such as:
 - Add and remove tasks from lanes.
 - Archive and unarchive tasks.
 - Read, update, remove, and add frontmatter and settings.
+
+## API
+
+### Public exports
+
+```python
+from obsidian_kanban_parser import parse, write, move_item, KanbanBoard, KanbanLane, KanbanItem
+```
+
+### Parsing and writing
+
+```python
+board = parse(markdown_text)   # str -> KanbanBoard
+text = write(board)            # KanbanBoard -> str
+```
+
+### Navigating the board
+
+```python
+# Iterate over lanes
+for lane in board:
+    print(lane.title, len(lane))
+
+# Access lanes by name or index
+todo_lane = board["Todo"]       # KeyError if not found
+first_lane = board[0]
+todo_lane = board.lane("Todo")  # None if not found
+
+# Iterate over items in a lane
+for item in todo_lane:
+    print(item.title_raw)
+
+# Index into a lane
+first_item = todo_lane[0]
+
+# Check membership
+if item in todo_lane:
+    ...
+```
+
+### Tags
+
+```python
+item = lane.items[0]
+
+# Read
+list(item.tags)          # ["#bug", "#frontend"]
+len(item.tags)           # 2
+"#bug" in item.tags      # True
+"bug" in item.tags       # True (# prefix optional)
+
+# Mutate
+item.tags.add("#urgent")         # idempotent
+item.tags.remove("#bug")         # safe if absent
+```
+
+### Inline fields
+
+```python
+item.inline_fields["due"]               # datetime.date | int | float | str | None
+item.inline_fields["due"] = date(2024, 6, 1)
+del item.inline_fields["due"]
+"due" in item.inline_fields             # True / False
+```
+
+### Checked state
+
+```python
+item.checked          # bool
+item.checked = True   # writable
+```
+
+### Subtasks
+
+```python
+item.subtasks                        # [(bool, str), ...]
+item.add_subtask("Step 1")           # unchecked
+item.add_subtask("Done", checked=True)
+item.remove_subtask("Step 1")        # returns True if found
+```
+
+### Adding and removing items
+
+```python
+new_item = lane.add_item("My new task")
+new_item = lane.add_item("My new task", position=0)   # prepend
+new_item = lane.add_item("Done task", check_char="x")
+lane.remove_item(item)   # returns True on success
+```
+
+### Moving items
+
+```python
+from obsidian_kanban_parser import move_item
+
+move_item(item, from_lane=board["Todo"], to_lane=board["Done"])
+move_item(item, from_lane=board["Todo"], to_lane=board["Done"], position=0)
+```
+
+### Archiving
+
+```python
+board.archive_item(item, from_lane=board["Todo"])       # returns True on success
+board.unarchive_item(item, to_lane=board["Backlog"])    # returns True on success
+```
+
+### Searching
+
+```python
+# Returns [(lane, item), ...]
+board.find_items_by_tag("#urgent")
+board.find_items_by_tag("urgent")          # # prefix optional
+
+board.find_items_by_inline_field("due")              # any value
+board.find_items_by_inline_field("priority", "high") # specific value
+```

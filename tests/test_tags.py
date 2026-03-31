@@ -3,7 +3,7 @@
 Arrange markdown → parse → mutate tags → write → assert output markdown.
 """
 
-from obsidian_kanban_parser import find_items_by_tag, parse, write
+from obsidian_kanban_parser import parse, write
 from tests.helpers import assert_markdown_is_equal, get_lane, make_board, make_item, make_lane
 
 # ---------------------------------------------------------------------------
@@ -20,11 +20,59 @@ def test_read_tags_from_item() -> None:
     item = get_lane(board, "Todo").items[0]
 
     # assert
-    assert item.tags == ["#bug", "#frontend"]
+    assert list(item.tags) == ["#bug", "#frontend"]
+
+
+def test_tags_len() -> None:
+    # arrange
+    md = make_board(make_lane("Todo", make_item("Task #bug #frontend")))
+    board = parse(md)
+
+    # act
+    item = get_lane(board, "Todo").items[0]
+
+    # assert
+    assert len(item.tags) == 2
+
+
+def test_tags_contains_with_hash() -> None:
+    # arrange
+    md = make_board(make_lane("Todo", make_item("Task #bug")))
+    board = parse(md)
+
+    # act
+    item = get_lane(board, "Todo").items[0]
+
+    # assert
+    assert "#bug" in item.tags
+
+
+def test_tags_contains_without_hash() -> None:
+    # arrange
+    md = make_board(make_lane("Todo", make_item("Task #bug")))
+    board = parse(md)
+
+    # act
+    item = get_lane(board, "Todo").items[0]
+
+    # assert
+    assert "bug" in item.tags
+
+
+def test_tags_not_contains() -> None:
+    # arrange
+    md = make_board(make_lane("Todo", make_item("Task #bug")))
+    board = parse(md)
+
+    # act
+    item = get_lane(board, "Todo").items[0]
+
+    # assert
+    assert "#frontend" not in item.tags
 
 
 # ---------------------------------------------------------------------------
-# add_tag
+# tags.add
 # ---------------------------------------------------------------------------
 
 
@@ -35,7 +83,7 @@ def test_add_tag_to_item() -> None:
     item = get_lane(board, "Todo").items[0]
 
     # act
-    item.add_tag("#urgent")
+    item.tags.add("#urgent")
     result_md = write(board)
 
     # assert
@@ -50,15 +98,30 @@ def test_add_tag_is_idempotent() -> None:
     item = get_lane(board, "Todo").items[0]
 
     # act — add tag that already exists
-    item.add_tag("#urgent")
+    item.tags.add("#urgent")
     result_md = write(board)
 
     # assert — markdown unchanged
     assert_markdown_is_equal(result_md, md)
 
 
+def test_add_tag_without_hash_normalizes() -> None:
+    # arrange
+    md = make_board(make_lane("Todo", make_item("Task")))
+    board = parse(md)
+    item = get_lane(board, "Todo").items[0]
+
+    # act
+    item.tags.add("urgent")
+    result_md = write(board)
+
+    # assert
+    expected_md = make_board(make_lane("Todo", make_item("Task #urgent")))
+    assert_markdown_is_equal(result_md, expected_md)
+
+
 # ---------------------------------------------------------------------------
-# remove_tag
+# tags.remove / tags.discard
 # ---------------------------------------------------------------------------
 
 
@@ -69,7 +132,7 @@ def test_remove_tag_from_item() -> None:
     item = get_lane(board, "Todo").items[0]
 
     # act
-    item.remove_tag("#bug")
+    item.tags.remove("#bug")
     result_md = write(board)
 
     # assert
@@ -84,7 +147,7 @@ def test_remove_tag_not_present_is_safe() -> None:
     item = get_lane(board, "Todo").items[0]
 
     # act — remove tag that does not exist
-    item.remove_tag("#nonexistent")
+    item.tags.remove("#nonexistent")
     result_md = write(board)
 
     # assert — markdown unchanged
@@ -98,11 +161,26 @@ def test_remove_one_of_multiple_tags() -> None:
     item = get_lane(board, "Todo").items[0]
 
     # act
-    item.remove_tag("#frontend")
+    item.tags.remove("#frontend")
     result_md = write(board)
 
     # assert — only #frontend removed, others preserved
     expected_md = make_board(make_lane("Todo", make_item("Task #bug #urgent")))
+    assert_markdown_is_equal(result_md, expected_md)
+
+
+def test_discard_is_alias_for_remove() -> None:
+    # arrange
+    md = make_board(make_lane("Todo", make_item("Task #bug")))
+    board = parse(md)
+    item = get_lane(board, "Todo").items[0]
+
+    # act
+    item.tags.remove("#bug")
+    result_md = write(board)
+
+    # assert
+    expected_md = make_board(make_lane("Todo", make_item("Task")))
     assert_markdown_is_equal(result_md, expected_md)
 
 
@@ -117,8 +195,8 @@ def test_tag_search_is_case_sensitive() -> None:
     board = parse(md)
 
     # act
-    results_exact = find_items_by_tag(board, "#Bug")
-    results_lower = find_items_by_tag(board, "#bug")
+    results_exact = board.find_items_by_tag("#Bug")
+    results_lower = board.find_items_by_tag("#bug")
 
     # assert — only the exact case matches
     assert len(results_exact) == 1

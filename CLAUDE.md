@@ -44,6 +44,15 @@ This library parses Obsidian Kanban plugin markdown files into Python objects an
 - All utility functions in `parsing_utils.py` are intentionally private (underscore prefix) — they mirror JS internals and are not part of the public API.
 - Requires Python 3.14+.
 
+## Obsidian kanban plugin source code references
+The source code of the Obsidian kanban plugin can be found in the git submodule at `./obsidian-kanban`.
+Some files of interest are:
+- `./obsidian-kanbansrc/parsers/helpers/parser.ts`
+- `./obsidian-kanbansrc/parsers/helpers/parser`
+- `./obsidian-kanbansrc/parsers/formats/list.ts`
+- `./obsidian-kanbansrc/parsers/common.ts`
+- etc.
+
 ## Way of working
 - When adding a new feature do this in a test driven way: write test -> write feature -> ensure test pass -> refactor -> repeat as necessary.
 - Before finishing any coding task, make sure that:

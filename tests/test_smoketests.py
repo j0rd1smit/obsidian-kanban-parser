@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from obsidian_kanban_parser import KanbanBoard, KanbanItem, SubTask, parse
+from obsidian_kanban_parser import KanbanBoard, KanbanItem, SubTask, parse, write
 
 from .helpers import assert_markdown_is_equal, parse_and_write
 
@@ -58,3 +58,93 @@ def _find_item_that_contains_text(board: KanbanBoard, text: str) -> KanbanItem:
                 return item
 
     raise AssertionError(f"No item found containing text: {text!r}")
+
+
+def test_new_inline_field_should_be_added_on_the_first_line() -> None:
+    # arange
+    content = """
+---
+
+kanban-plugin: board
+
+---
+
+## some list
+
+- [ ] Normal task [due:: 2025-06-14]
+- [ ] Normal task with subtasks
+  - [ ] Subtask 1 [label:: hello]
+  - [ ] Subtask 2
+
+""".strip()
+    expected = """
+---
+
+kanban-plugin: board
+
+---
+
+## some list
+
+- [ ] Normal task [due:: 2025-06-14] [completion:: 2025-06-14]
+- [ ] Normal task with subtasks [completion:: 2025-06-14]
+  - [ ] Subtask 1 [label:: hello]
+  - [ ] Subtask 2
+
+""".strip()
+
+    # act
+    board = parse(content)
+    for lane in board:
+        for item in lane:
+            item.inline_fields["completion"] = "2025-06-14"
+    output = write(board)
+
+    # assert
+    assert_markdown_is_equal(output, expected)
+
+
+def test_new_tags_should_be_added_on_the_first_line() -> None:
+    # arange
+    content = """
+---
+
+kanban-plugin: board
+
+---
+
+## some list
+
+- [ ] Normal task #important [due:: 2025-06-14]
+- [ ] Normal task with subtasks
+  - [ ] Subtask 1 [label:: hello]
+  - [ ] Subtask 2 #something
+- [ ] other task
+
+""".strip()
+    expected = """
+---
+
+kanban-plugin: board
+
+---
+
+## some list
+
+- [ ] Normal task #important [due:: 2025-06-14] #newtag
+- [ ] Normal task with subtasks #newtag
+  - [ ] Subtask 1 [label:: hello]
+  - [ ] Subtask 2 #something
+- [ ] other task #newtag
+
+""".strip()
+
+    # act
+    board = parse(content)
+    for lane in board:
+        for item in lane:
+            item.tags.add("newtag")
+    output = write(board)
+
+    # assert
+    assert_markdown_is_equal(output, expected)

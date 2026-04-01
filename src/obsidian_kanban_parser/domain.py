@@ -129,6 +129,7 @@ class KanbanItem:
     content: str
     check_char: str = " "  # ' '=unchecked, 'x'=checked, or custom char
     block_id: str | None = None
+    _indent: str = field(default="    ", repr=False)  # continuation-line indent used in serialisation
 
     def __post_init__(self) -> None:
         self.inline_fields = InlineFields(self)

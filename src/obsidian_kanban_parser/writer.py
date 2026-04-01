@@ -8,7 +8,8 @@ from obsidian_kanban_parser.utils.parsing_utils import _indent_newlines, _lane_t
 
 def _item_to_md(item: KanbanItem, use_tab: bool = False) -> str:
     """Mirror of itemToMd() in list.ts."""
-    body = _indent_newlines(item.content, use_tab)
+    indent = "\t" if use_tab else item._indent
+    body = _indent_newlines(item.content, indent=indent)
     if item.block_id:
         # Block ID appended to first line only.
         nl = body.find("\n")
@@ -49,8 +50,10 @@ def _settings_to_md(board: KanbanBoard) -> str:
     """Mirror of settingsToCodeblock() in common.ts."""
     if board.settings is None:
         return ""
-    # Use the preserved raw JSON string for byte-for-byte fidelity.
-    json_str = board._settings_raw if board._settings_raw is not None else json.dumps(board.settings, separators=(",", ":"))
+    # Use the preserved raw block for byte-for-byte fidelity.
+    if board._settings_raw is not None:
+        return "\n\n" + board._settings_raw
+    json_str = json.dumps(board.settings, separators=(",", ":"))
     return "\n".join(["", "", "%% kanban:settings", "", "```", json_str, "```", "", "%%", ""])
 
 

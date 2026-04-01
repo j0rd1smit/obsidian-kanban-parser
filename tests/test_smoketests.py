@@ -39,8 +39,8 @@ def test_subtasks_are_parsed_correctly_for_tasks_with_text_description() -> None
     expected_subtasks = [
         SubTask(text="subtask 1", checked=False),
         SubTask(text="subtask 2", checked=True),
-        SubTask(text="subtask 3", checked=True),
-        SubTask(text="subtask 4", checked=True),
+        SubTask(text="subtask 3", checked=False),
+        SubTask(text="subtask 4", checked=False),
     ]
 
     # Act

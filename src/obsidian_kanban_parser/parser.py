@@ -18,10 +18,11 @@ def _split_list_items(text: str) -> list[str]:
             if current is not None:
                 items.append(current)
             current = line
-        elif current is not None and (line.startswith("    ") or line.startswith("\t")):
+        elif current is not None and line and line[0] in (" ", "\t"):
+            # Any indented line (spaces or tab) is a continuation of the current item.
             current += "\n" + line
         else:
-            # Any other line ends the current item (blank lines, non-list content).
+            # Blank lines and non-indented non-item lines end the current item.
             if current is not None:
                 items.append(current)
                 current = None
@@ -30,6 +31,16 @@ def _split_list_items(text: str) -> list[str]:
         items.append(current)
 
     return items
+
+
+def _detect_indent(raw: str) -> str:
+    """Detect the indentation used on the first continuation line of a raw item."""
+    for line in raw.split("\n")[1:]:
+        if line and line[0] in (" ", "\t"):
+            m = re.match(r"^([ \t]+)", line)
+            if m:
+                return m.group(1)
+    return "    "  # default 4-space
 
 
 def _parse_raw_item(raw: str) -> KanbanItem:
@@ -41,7 +52,8 @@ def _parse_raw_item(raw: str) -> KanbanItem:
 
     check_char = m.group(1)
     content = m.group(2)
-    content = _dedent_newlines(content)
+    indent = _detect_indent(raw)
+    content = _dedent_newlines(content, indent)
 
     # Block ID lives at the end of the first line only.
     nl = content.find("\n")
@@ -56,7 +68,7 @@ def _parse_raw_item(raw: str) -> KanbanItem:
 
     content = first_line + rest
 
-    return KanbanItem(content=content, check_char=check_char, block_id=block_id)
+    return KanbanItem(content=content, check_char=check_char, block_id=block_id, _indent=indent)
 
 
 def _parse_items_block(block: str) -> list[KanbanItem]:
@@ -74,14 +86,17 @@ def parse(text: str) -> KanbanBoard:
     settings: dict | None = None
     settings_raw: str | None = None
 
+    # Match both formats: with blank lines (full-board) and without (compact).
+    # The leading \n\n is consumed so that text[: sm.start()] retains the
+    # trailing newlines produced by the lane serialiser.
     settings_re = re.compile(
-        r"\n\n%% kanban:settings\n\n```\n(.*?)\n```\n\n%%\n?",
+        r"\n\n(%% kanban:settings\n(?:\n)?```\n(.*?)\n```\n(?:\n)?%%\n?)",
         re.DOTALL,
     )
     sm = settings_re.search(text)
     if sm:
-        settings_raw = sm.group(1)
-        settings = json.loads(settings_raw)
+        settings_raw = sm.group(1)  # full block, used verbatim on write-back
+        settings = json.loads(sm.group(2))
         text = text[: sm.start()]
 
     # ---- 2. Frontmatter -------------------------------------------------------

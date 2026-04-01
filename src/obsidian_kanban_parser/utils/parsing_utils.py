@@ -4,15 +4,16 @@ _BLOCK_ID_RE = re.compile(r"\s+\^([a-zA-Z0-9\-_]+)$")
 _LANE_WIP_RE = re.compile(r"^(.*?)\s*\((\d+)\)$")
 
 
-def _indent_newlines(s: str, use_tab: bool = False) -> str:
+def _indent_newlines(s: str, use_tab: bool = False, indent: str | None = None) -> str:
     """Mirror of indentNewLines(): indent continuation lines with 4 spaces (or tab)."""
-    indent = "\t" if use_tab else "    "
+    if indent is None:
+        indent = "\t" if use_tab else "    "
     return s.strip().replace("\n", f"\n{indent}")
 
 
-def _dedent_newlines(s: str) -> str:
-    """Mirror of dedentNewLines(): strip the 4-space / tab indent from continuation lines."""
-    return re.sub(r"\n(?: {4}|\t)", "\n", s.strip())
+def _dedent_newlines(s: str, indent: str = "    ") -> str:
+    """Mirror of dedentNewLines(): strip the indent prefix from continuation lines."""
+    return re.sub(r"\n" + re.escape(indent), "\n", s.strip())
 
 
 def _replace_brs(s: str) -> str:

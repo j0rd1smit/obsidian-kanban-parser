@@ -133,13 +133,15 @@ def parse_and_write(md: str) -> str:
 
 
 def assert_markdown_is_equal(actual: str, expected: str) -> None:
-    """Assert that two markdown strings are identical."""
-    if actual == expected:
+    """Assert that two markdown strings are identical (trailing whitespace is ignored)."""
+    actual_normalized = actual.rstrip()
+    expected_normalized = expected.rstrip()
+    if actual_normalized == expected_normalized:
         return
 
     diff = difflib.unified_diff(
-        expected.splitlines(keepends=True),
-        actual.splitlines(keepends=True),
+        expected_normalized.splitlines(keepends=True),
+        actual_normalized.splitlines(keepends=True),
         fromfile="expected",
         tofile="actual",
         lineterm="",

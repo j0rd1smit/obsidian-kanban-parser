@@ -69,7 +69,16 @@ class InlineFields:
         if count:
             self._item.content = new
         else:
-            self._item.content = self._item.content.rstrip() + f" [{key}::{serialized}]"
+            # Detect format: use "key:: value" (with space) if existing fields use that style.
+            space = " " if re.search(r"[\[\(]\w[\w\-]*:: ", self._item.content) else ""
+            new_field = f" [{key}::{space}{serialized}]"
+            nl = self._item.content.find("\n")
+            if nl == -1:
+                self._item.content = self._item.content.rstrip() + new_field
+            else:
+                first_line = self._item.content[:nl].rstrip()
+                rest = self._item.content[nl:]
+                self._item.content = first_line + new_field + rest
 
     def __delitem__(self, key: str) -> None:
         pat = re.compile(rf"\s*[\[\(]{re.escape(key)}::[^\]\)]+[\]\)]")
@@ -105,10 +114,16 @@ class Tags:
         return f"Tags({list(self)!r})"
 
     def add(self, tag: str) -> None:
-        """Idempotent — does nothing if the tag is already present."""
+        """Idempotent — does nothing if the tag is already present. Adds to first line only."""
         tag = self._normalize(tag)
         if tag not in self:
-            self._item.content = self._item.content.rstrip() + f" {tag}"
+            nl = self._item.content.find("\n")
+            if nl == -1:
+                self._item.content = self._item.content.rstrip() + f" {tag}"
+            else:
+                first_line = self._item.content[:nl].rstrip()
+                rest = self._item.content[nl:]
+                self._item.content = first_line + f" {tag}" + rest
 
     def remove(self, tag: str) -> None:
         """Safe — does nothing if the tag is absent."""

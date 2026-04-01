@@ -30,6 +30,9 @@ kanban-plugin: board
   - [x] Update booking info  [completion:: 2025-06-14]
   - [x] Update google info  [completion:: 2025-06-14]
 
+
+
+
 %% kanban:settings
 ```
 {"kanban-plugin":"board"}

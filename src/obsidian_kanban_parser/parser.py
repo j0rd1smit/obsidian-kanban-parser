@@ -12,20 +12,29 @@ def _split_list_items(text: str) -> list[str]:
     """Split a markdown list block into raw item strings (with continuation lines)."""
     items: list[str] = []
     current: str | None = None
+    blank_buffer: list[str] = []  # blank lines waiting to see if they belong to current item
 
     for line in text.split("\n"):
         if re.match(r"^- \[.\]", line):
             if current is not None:
                 items.append(current)
             current = line
+            blank_buffer = []
+        elif current is not None and not line:
+            # Blank line — buffer it; it may be a continuation gap (loose list item).
+            blank_buffer.append(line)
         elif current is not None and line and line[0] in (" ", "\t"):
-            # Any indented line (spaces or tab) is a continuation of the current item.
+            # Indented line — flush buffered blanks into current item, then add this line.
+            for blank in blank_buffer:
+                current += "\n" + blank
+            blank_buffer = []
             current += "\n" + line
         else:
-            # Blank lines and non-indented non-item lines end the current item.
+            # Non-blank, non-indented, non-item line: end current item.
             if current is not None:
                 items.append(current)
                 current = None
+            blank_buffer = []
 
     if current is not None:
         items.append(current)

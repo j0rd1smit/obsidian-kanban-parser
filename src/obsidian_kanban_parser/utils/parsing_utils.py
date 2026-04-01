@@ -5,10 +5,17 @@ _LANE_WIP_RE = re.compile(r"^(.*?)\s*\((\d+)\)$")
 
 
 def _indent_newlines(s: str, use_tab: bool = False, indent: str | None = None) -> str:
-    """Mirror of indentNewLines(): indent continuation lines with 4 spaces (or tab)."""
+    """Mirror of indentNewLines(): indent continuation lines with 4 spaces (or tab).
+
+    Blank continuation lines are kept blank (no trailing indent added).
+    """
     if indent is None:
         indent = "\t" if use_tab else "    "
-    return s.strip().replace("\n", f"\n{indent}")
+    lines = s.strip().split("\n")
+    result = [lines[0]]
+    for line in lines[1:]:
+        result.append(f"{indent}{line}" if line else "")
+    return "\n".join(result)
 
 
 def _dedent_newlines(s: str, indent: str = "    ") -> str:

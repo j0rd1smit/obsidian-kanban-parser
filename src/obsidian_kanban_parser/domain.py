@@ -154,10 +154,7 @@ class KanbanItem:
     @property
     def subtasks(self) -> list[SubTask]:
         """Return a list of SubTask for each sub-task line in content."""
-        return [
-            SubTask(checked=m.group(1).lower() == "x", text=m.group(2))
-            for m in re.finditer(r"\n- \[(.)\] (.+)", self.content)
-        ]
+        return [SubTask(checked=m.group(1).lower() == "x", text=m.group(2)) for m in re.finditer(r"\n- \[(.)\] (.+)", self.content)]
 
     def add_subtask(self, subtask_text: str, checked: bool = False) -> None:
         """Append a checklist sub-task line to content."""
@@ -282,8 +279,4 @@ class KanbanBoard:
         return True
 
     def __repr__(self) -> str:
-        return (
-            f"KanbanBoard({len(self.lanes)} lanes, "
-            f"{sum(len(ln.items) for ln in self.lanes)} items, "
-            f"{len(self.archive)} archived)"
-        )
+        return f"KanbanBoard({len(self.lanes)} lanes, {sum(len(ln.items) for ln in self.lanes)} items, {len(self.archive)} archived)"

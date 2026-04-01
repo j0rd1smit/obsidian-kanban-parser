@@ -12,6 +12,7 @@ stays composable and the test body makes every step explicit.
 
 from __future__ import annotations
 
+import difflib
 import json
 from typing import Any
 
@@ -131,9 +132,20 @@ def parse_and_write(md: str) -> str:
     return write(parse(md))
 
 
-def assert_markdown_is_equal(one: str, other: str) -> None:
+def assert_markdown_is_equal(actual: str, expected: str) -> None:
     """Assert that two markdown strings are identical."""
-    assert one == other, f"different output.\n\n--- expected ---\n{other!r}\n\n--- got ---\n{one!r}"
+    if actual == expected:
+        return
+
+    diff = difflib.unified_diff(
+        expected.splitlines(keepends=True),
+        actual.splitlines(keepends=True),
+        fromfile="expected",
+        tofile="actual",
+        lineterm="",
+    )
+    diff_str = "".join(diff)
+    raise AssertionError(f"Markdown output differs:\n\n{diff_str}")
 
 
 def assert_item_in_lane(lane: KanbanLane, item_fragment: str) -> None:

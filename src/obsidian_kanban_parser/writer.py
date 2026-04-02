@@ -1,4 +1,5 @@
 import json
+import re
 
 import yaml
 
@@ -6,10 +7,32 @@ from obsidian_kanban_parser.domain import KanbanBoard, KanbanItem, KanbanLane
 from obsidian_kanban_parser.utils.parsing_utils import _indent_newlines, _lane_title_with_max_items, _replace_newlines
 
 
+def _fix_tag_before_subtask(content: str) -> str:
+    """Add trailing space to any line ending with a tag immediately followed by a subtask.
+
+    Obsidian fails to render subtasks when the preceding line ends with a bare tag
+    (e.g. ``#project/foo``) and has no trailing space.  This mirrors the Obsidian
+    plugin behaviour of emitting a trailing space in that case.
+    Only lines that *immediately* precede a subtask line are affected.
+    """
+    lines = content.split("\n")
+    result = []
+    for i, line in enumerate(lines):
+        if (
+            i + 1 < len(lines)
+            and re.search(r"#\S+$", line)  # ends with a tag
+            and re.match(r"^- \[.\]", lines[i + 1])  # next line is a subtask
+        ):
+            result.append(line + " ")
+        else:
+            result.append(line)
+    return "\n".join(result)
+
+
 def _item_to_md(item: KanbanItem, use_tab: bool = False) -> str:
     """Mirror of itemToMd() in list.ts."""
     indent = "\t" if use_tab else item._indent
-    body = _indent_newlines(item.content, indent=indent)
+    body = _indent_newlines(_fix_tag_before_subtask(item.content), indent=indent)
     if item.block_id:
         # Block ID appended to first line only.
         nl = body.find("\n")

@@ -122,22 +122,16 @@ kanban-plugin: board
 - [ ] other task
 
 """.strip()
-    expected = """
----
-
-kanban-plugin: board
-
----
-
-## some list
-
-- [ ] Normal task #important [due:: 2025-06-14] #newtag
-- [ ] Normal task with subtasks #newtag
-  - [ ] Subtask 1 [label:: hello]
-  - [ ] Subtask 2 #something
-- [ ] other task #newtag
-
-""".strip()
+    # Trailing space after #newtag is required: Obsidian does not render subtasks
+    # when the preceding line ends with a bare tag and no trailing space.
+    expected = (
+        "---\n\nkanban-plugin: board\n\n---\n\n## some list\n\n"
+        "- [ ] Normal task #important [due:: 2025-06-14] #newtag\n"
+        "- [ ] Normal task with subtasks #newtag \n"
+        "  - [ ] Subtask 1 [label:: hello]\n"
+        "  - [ ] Subtask 2 #something\n"
+        "- [ ] other task #newtag"
+    )
 
     # act
     board = parse(content)

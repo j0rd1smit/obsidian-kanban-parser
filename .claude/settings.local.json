@@ -6,7 +6,8 @@
       "Bash(just test:*)",
       "Bash(uvx ruff:*)",
       "Bash(just linting:*)",
-      "Bash(find /Users/jordismit/projects/obsidian_kanban_parser/obsidian-kanban -name *.ts)"
+      "Bash(find /Users/jordismit/projects/obsidian_kanban_parser/obsidian-kanban -name *.ts)",
+      "Bash(ls -la /Users/jordismit/projects/obsidian_kanban_parser/tests/test_*.py)"
     ]
   }
 }

@@ -10,6 +10,7 @@ that is intentionally kept as a regression anchor).
 
 import pytest
 
+from obsidian_kanban_parser import parse, write
 from tests.helpers import assert_markdown_is_equal, make_board, make_item, make_lane, parse_and_write
 
 # ---------------------------------------------------------------------------
@@ -107,6 +108,22 @@ _ROUND_TRIP_CASES: list[tuple[str, str]] = [
             )
         ),
     ),
+    (
+        "tag immediately before subtask — trailing space preserved on round-trip",
+        make_board(make_lane("Todo", make_item("Task: #my-tag\n- [ ] Sub-task"))),
+    ),
+    (
+        "tag with non-subtask continuation before subtask — no trailing space",
+        make_board(make_lane("Todo", make_item("Task: #my-tag\nsome note\n- [ ] Sub-task"))),
+    ),
+    (
+        "line ending with inline-field bracket before subtask — no trailing space",
+        make_board(make_lane("Todo", make_item("Task: #tag1 #tag2 [scheduled:: 2026-04-01]\n- [ ] Sub-task"))),
+    ),
+    (
+        "tag with existing trailing space before subtask — no double space",
+        make_board(make_lane("Todo", make_item("Task: #my-tag \n- [ ] Sub-task"))),
+    ),
 ]
 
 
@@ -117,3 +134,23 @@ def test_round_trip(description: str, md: str) -> None:
 
     # assert
     assert_markdown_is_equal(output_md, md)
+
+
+def test_write_adds_trailing_space_after_tag_before_subtask() -> None:
+    """Writer must add trailing space when a tag is immediately followed by a subtask.
+
+    Obsidian does not render the subtask list when the preceding line ends with a
+    bare ``#tag`` and no trailing space.  This test verifies the fix fires even when
+    the source markdown lacks the space (e.g. user-edited files).
+    """
+    # arrange — raw item built without trailing space after the tag
+    raw_item = "- [ ] Task: #my-tag\n    - [ ] Sub-task"
+    raw_md = make_board(make_lane("Todo", raw_item))
+    board = parse(raw_md)
+
+    # act
+    result_md = write(board)
+
+    # assert — writer must add the trailing space
+    expected_md = make_board(make_lane("Todo", make_item("Task: #my-tag\n- [ ] Sub-task")))
+    assert_markdown_is_equal(result_md, expected_md)

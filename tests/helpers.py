@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import difflib
 import json
+import re
 from typing import Any
 
 from obsidian_kanban_parser import parse, write
@@ -56,6 +57,15 @@ def make_item(
     mirroring ``_item_to_md`` / ``_indent_newlines`` in writer.py.
     """
     check_char = "x" if checked else " "
+    # Mirror _fix_tag_before_subtask in writer.py.
+    lines = content.split("\n")
+    fixed: list[str] = []
+    for i, line in enumerate(lines):
+        if i + 1 < len(lines) and re.search(r"#\S+$", line) and re.match(r"^- \[.\]", lines[i + 1]):
+            fixed.append(line + " ")
+        else:
+            fixed.append(line)
+    content = "\n".join(fixed)
     # Mirror _indent_newlines: strip then re-indent continuation lines.
     body = content.strip().replace("\n", "\n    ")
     if block_id:
